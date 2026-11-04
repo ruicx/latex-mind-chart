@@ -1,0 +1,83 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{./tex/mindchart}
+
+\begin{document}
+
+\section*{Multi-Level Mind Map (3+ Tiers)}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic]
+[Computer Science
+  [Data Structures
+    [Linear
+      [Arrays]
+      [Linked Lists]
+      [Queues \& Stacks]
+    ]
+    [Non-Linear
+      [Binary Trees]
+      [Heaps]
+      [Graphs]
+    ]
+  ]
+  [Algorithms
+    [Sorting
+      [QuickSort $\mathcal{O}(n \log n)$]
+      [MergeSort]
+    ]
+    [Searching
+      [Binary Search]
+      [BFS / DFS]
+    ]
+  ]
+]
+\end{mindchart}
+
+\vspace{1.5cm}
+
+\section*{Elbow Connector Style (\texttt{line=elbow})}
+
+\begin{mindchart}[theme=business, layout=balanced, line=elbow]
+[Software System
+  [Backend
+    [Microservices]
+    [API Gateway]
+    [PostgreSQL]
+  ]
+  [Frontend
+    [React SPA]
+    [Tailwind CSS]
+  ]
+  [DevOps
+    [Docker]
+    [Kubernetes]
+  ]
+  [Security
+    [OAuth 2.0]
+    [HTTPS / TLS]
+  ]
+]
+\end{mindchart}
+
+\vspace{1.5cm}
+
+\section*{Boxed Card Style (\texttt{style=boxed})}
+
+\begin{mindchart}[theme=forest, layout=right, style=boxed]
+[Artificial Intelligence
+  [Perception
+    [Computer Vision]
+    [Audio Processing]
+  ]
+  [Cognition
+    [Knowledge Graphs]
+    [Reasoning Engines]
+  ]
+  [Action
+    [Robotics]
+    [Autonomous Driving]
+  ]
+]
+\end{mindchart}
+
+\end{document}

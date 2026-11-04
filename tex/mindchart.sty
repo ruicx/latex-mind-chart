@@ -1,0 +1,28 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{mindchart}[2026/11/03 v0.1.0 Modern XMind-Style Mind Map Package]
+
+\RequirePackage{iftex}
+\RequireLuaTeX
+
+\RequirePackage{tikz}
+\RequirePackage{xcolor}
+
+\newbox\mindchart@box
+
+\directlua{
+    local f = kpse.find_file("mindchart.lua", "lua") or "./tex/mindchart.lua"
+    dofile(f)
+}
+
+\newcommand{\mindchartMeasureItem}[2]{%
+    \sbox\mindchart@box{#2}%
+    \directlua{mindchart.store_dim(#1, \the\mindchart@box)}%
+}
+
+\newcommand{\mindchartFinishMeasure}{%
+    \directlua{mindchart.render()}%
+}
+
+\NewDocumentEnvironment{mindchart}{ O{} +b }{%
+    \directlua{mindchart.prepare([==[\unexpanded{#2}]==], "#1")}%
+}{}

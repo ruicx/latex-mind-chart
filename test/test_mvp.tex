@@ -1,0 +1,52 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{./tex/mindchart}
+
+\begin{document}
+
+\section*{MindChart MVP: Logic Chart (Right)}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic]
+[Machine Learning
+  [Supervised Learning
+    [Linear Regression $\hat{y} = Wx + b$]
+    [Decision Trees]
+    [Support Vector Machines]
+  ]
+  [Unsupervised Learning
+    [K-Means Clustering]
+    [Principal Component Analysis]
+  ]
+  [Reinforcement Learning
+    [Q-Learning]
+    [Policy Gradient]
+  ]
+]
+\end{mindchart}
+
+\vspace{1.5cm}
+
+\section*{MindChart MVP: Balanced Mind Map}
+
+\begin{mindchart}[theme=business, layout=balanced, style=classic]
+[Central Project
+  [Planning
+    [Requirements]
+    [Architecture]
+  ]
+  [Execution
+    [Core Lua Engine]
+    [TikZ Renderer]
+  ]
+  [Testing
+    [Unit Tests]
+    [Visual Checks]
+  ]
+  [Release
+    [Documentation]
+    [CTAN Package]
+  ]
+]
+\end{mindchart}
+
+\end{document}
