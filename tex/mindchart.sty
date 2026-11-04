@@ -23,6 +23,10 @@
     \directlua{mindchart.render()}%
 }
 
+% Overlay markers for syntax completion inside environment
+\NewDocumentCommand{\summary}{ O{} m m m }{}
+\NewDocumentCommand{\rel}{ O{} m m m }{}
+
 \NewDocumentEnvironment{mindchart}{ O{} +b }{%
     \directlua{mindchart.prepare([==[\unexpanded{#2}]==], "#1")}%
 }{}

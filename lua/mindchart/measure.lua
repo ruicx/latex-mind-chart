@@ -18,6 +18,13 @@ function measure.init(root)
     ast.traverse_preorder(root, function(node)
         node_map[node.id] = node
     end)
+
+    -- Also index summary nodes
+    for _, s in ipairs(ast.summaries) do
+        if s.node then
+            node_map[s.node.id] = s.node
+        end
+    end
 end
 
 --- Emits TeX measurement commands into the input stream.
@@ -27,6 +34,14 @@ function measure.emit_measurement_commands()
     ast.traverse_preorder(active_ast, function(node)
         tex.print(string.format("\\mindchartMeasureItem{%d}{%s}", node.id, node.text))
     end)
+
+    -- Measure summary nodes
+    for _, s in ipairs(ast.summaries) do
+        if s.node and s.node.text ~= "" then
+            tex.print(string.format("\\mindchartMeasureItem{%d}{%s}", s.node.id, s.node.text))
+        end
+    end
+
     tex.print("\\mindchartFinishMeasure")
 end
 

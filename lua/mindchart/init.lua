@@ -3,6 +3,7 @@
   Main coordinator and public API for mindchart.
 --]]
 
+local ast = require("mindchart.ast")
 local parser = require("mindchart.parser")
 local measure = require("mindchart.measure")
 local layout = require("mindchart.layout")

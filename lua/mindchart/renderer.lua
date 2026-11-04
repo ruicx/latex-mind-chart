@@ -9,12 +9,18 @@ local theme = require("mindchart.theme")
 
 local renderer = {}
 
---- Converts a hex color to a TikZ rgb expression: "{rgb,255:red,R;green,G;blue,B}"
---- @param hex string
+--- Converts a hex color or named color to a TikZ color expression
+--- @param col string
 --- @return string
-local function to_tikz_color(hex)
-    local r, g, b = theme.hex_to_rgb(hex)
-    return string.format("{rgb,255:red,%d;green,%d;blue,%d}", r, g, b)
+local function to_tikz_color(col)
+    if not col or col == "" then return "black" end
+    local clean = col:gsub("#", "")
+    if #clean == 6 and clean:match("^%x+$") then
+        local r, g, b = theme.hex_to_rgb(clean)
+        return string.format("{rgb,255:red,%d;green,%d;blue,%d}", r, g, b)
+    else
+        return col
+    end
 end
 
 --- Generates TikZ statements for a single node.
@@ -61,8 +67,12 @@ function renderer.render(root, options)
     options = options or {}
     local line_style = options.line or "curve"
     local line_width = tonumber(options.line_width) or 1.2
+    local scale = options.scale or "1"
 
-    tex.print("\\begin{tikzpicture}[baseline=(current bounding box.center), every node/.style={outer sep=0pt}]")
+    tex.print(string.format(
+        "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.append style={transform shape}, every node/.style={outer sep=0pt}]",
+        scale
+    ))
 
     -- Pass 1: Draw all connection curves
     ast.traverse_preorder(root, function(node, parent)
@@ -80,6 +90,27 @@ function renderer.render(root, options)
         local node_cmd = render_node(node)
         tex.print(node_cmd)
     end)
+
+    -- Pass 3: Draw summary brackets and summary nodes
+    for _, s in ipairs(ast.summaries) do
+        if s.bracket and s.node then
+            local bracket_cmd = curve.generate_bracket(s.bracket, s.node)
+            tex.print(bracket_cmd)
+
+            local s_node_cmd = render_node(s.node)
+            tex.print(s_node_cmd)
+        end
+    end
+
+    -- Pass 4: Draw cross-branch relationships
+    for _, r in ipairs(ast.relationships) do
+        local from_node = ast.named_nodes[r.from]
+        local to_node = ast.named_nodes[r.to]
+        if from_node and to_node then
+            local rel_cmd = curve.generate_relationship(r, from_node, to_node)
+            tex.print(rel_cmd)
+        end
+    end
 
     tex.print("\\end{tikzpicture}")
 end

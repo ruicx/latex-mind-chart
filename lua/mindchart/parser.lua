@@ -108,14 +108,140 @@ local function parse_node_declaration(decl)
     return text, options
 end
 
+--- Parses TeX commands like \summary[opts]{from}{to}{label} and \rel[opts]{from}{to}{label}.
+local function parse_command_invocations(input)
+    local summaries = {}
+    local relationships = {}
+
+    -- Helper to extract balanced { ... }
+    local function extract_arg(str, start_pos)
+        local i = start_pos
+        local len = #str
+        while i <= len and str:sub(i, i):match("%s") do i = i + 1 end
+        if i > len or str:sub(i, i) ~= "{" then return nil, start_pos end
+
+        local depth = 0
+        local content = {}
+        local j = i
+        while j <= len do
+            local c = str:sub(j, j)
+            if c == "{" then
+                depth = depth + 1
+                if depth > 1 then table.insert(content, c) end
+            elseif c == "}" then
+                depth = depth - 1
+                if depth == 0 then
+                    return table.concat(content), j + 1
+                else
+                    table.insert(content, c)
+                end
+            else
+                table.insert(content, c)
+            end
+            j = j + 1
+        end
+        return nil, start_pos
+    end
+
+    -- Helper to extract optional [ ... ]
+    local function extract_opt(str, start_pos)
+        local i = start_pos
+        local len = #str
+        while i <= len and str:sub(i, i):match("%s") do i = i + 1 end
+        if i > len or str:sub(i, i) ~= "[" then return nil, start_pos end
+
+        local depth = 0
+        local content = {}
+        local j = i
+        while j <= len do
+            local c = str:sub(j, j)
+            if c == "[" then
+                depth = depth + 1
+                if depth > 1 then table.insert(content, c) end
+            elseif c == "]" then
+                depth = depth - 1
+                if depth == 0 then
+                    return table.concat(content), j + 1
+                else
+                    table.insert(content, c)
+                end
+            else
+                table.insert(content, c)
+            end
+            j = j + 1
+        end
+        return nil, start_pos
+    end
+
+    -- Scan for \summary and \rel
+    local pos = 1
+    local len = #input
+    while pos <= len do
+        local s_sum, e_sum = input:find("\\summary", pos, true)
+        local s_rel, e_rel = input:find("\\rel", pos, true)
+
+        local next_cmd = nil
+        local cmd_type = nil
+        local cmd_end = nil
+
+        if s_sum and (not s_rel or s_sum < s_rel) then
+            next_cmd = s_sum
+            cmd_type = "summary"
+            cmd_end = e_sum
+        elseif s_rel then
+            next_cmd = s_rel
+            cmd_type = "rel"
+            cmd_end = e_rel
+        end
+
+        if not next_cmd then break end
+
+        local cur = cmd_end + 1
+        local opt_str, next_pos = extract_opt(input, cur)
+        cur = next_pos
+        local opts = parse_options(opt_str or "")
+
+        local arg1, p1 = extract_arg(input, cur)
+        local arg2, p2 = extract_arg(input, p1)
+        local arg3, p3 = extract_arg(input, p2)
+
+        if arg1 and arg2 then
+            if cmd_type == "summary" then
+                table.insert(summaries, {
+                    from = trim(arg1),
+                    to = trim(arg2),
+                    text = trim(arg3 or ""),
+                    options = opts,
+                })
+            elseif cmd_type == "rel" then
+                table.insert(relationships, {
+                    from = trim(arg1),
+                    to = trim(arg2),
+                    text = trim(arg3 or ""),
+                    options = opts,
+                })
+            end
+            pos = p3
+        else
+            pos = cmd_end + 1
+        end
+    end
+
+    return summaries, relationships
+end
+
 --- Parses bracket notation string into an AST tree.
 --- Example: "[Root [Child 1 [Grandchild 1]] [Child 2, color=blue]]"
+--- Also detects \summary and \rel overlay declarations.
 --- @param input string
 --- @return table|nil The root Node of the AST.
 function parser.parse_bracket(input)
     if not input or input == "" then return nil end
 
     ast.reset_counter()
+
+    -- Extract summaries and relationships first
+    local raw_summaries, raw_rels = parse_command_invocations(input)
 
     local stack = {}
     local root = nil
@@ -127,6 +253,17 @@ function parser.parse_bracket(input)
     local i = 1
 
     while i <= len do
+        -- If we encounter a backslash command like \summary or \rel outside any node text, skip it
+        if not in_node and input:sub(i, i) == "\\" then
+            -- Find end of line or next bracket
+            local next_bracket = input:find("[", i + 1, true)
+            if next_bracket then
+                i = next_bracket - 1
+            else
+                break
+            end
+        end
+
         local c = input:sub(i, i)
 
         if c == "{" then
@@ -143,6 +280,11 @@ function parser.parse_bracket(input)
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     parent_node.text = text
                     for k, v in pairs(opts) do parent_node.options[k] = v end
+                    if opts.name or opts.id then
+                        local n = opts.name or opts.id
+                        ast.named_nodes[n] = parent_node
+                        parent_node.name = n
+                    end
                 end
                 current_decl = {}
             end
@@ -166,11 +308,20 @@ function parser.parse_bracket(input)
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     node.text = text
                     for k, v in pairs(opts) do node.options[k] = v end
+                    if opts.name or opts.id then
+                        local n = opts.name or opts.id
+                        ast.named_nodes[n] = node
+                        node.name = n
+                    end
                 end
                 table.remove(stack)
                 current_decl = {}
                 if #stack == 0 then
                     in_node = false
+                    -- Stop parsing tree once root node is closed
+                    if root then
+                        break
+                    end
                 end
             end
         else
@@ -180,6 +331,20 @@ function parser.parse_bracket(input)
         end
 
         i = i + 1
+    end
+
+    -- Process summaries: create dedicated summary nodes
+    for _, s in ipairs(raw_summaries) do
+        local s_node = ast.new_node(s.text, s.options)
+        s_node.is_summary = true
+        s_node.style = s.options.style or "card"
+        s.node = s_node
+        table.insert(ast.summaries, s)
+    end
+
+    -- Process relationships
+    for _, r in ipairs(raw_rels) do
+        table.insert(ast.relationships, r)
     end
 
     return root

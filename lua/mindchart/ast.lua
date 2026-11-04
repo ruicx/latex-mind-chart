@@ -6,6 +6,9 @@
 local ast = {}
 
 local node_id_counter = 0
+ast.named_nodes = {}
+ast.summaries = {}
+ast.relationships = {}
 
 --- Creates a new AST Node.
 --- @param text string The raw text/content of the node.
@@ -13,7 +16,7 @@ local node_id_counter = 0
 --- @return table The newly initialized Node.
 function ast.new_node(text, options)
     node_id_counter = node_id_counter + 1
-    return {
+    local node = {
         id = node_id_counter,
         text = text or "",
         depth = 0,
@@ -36,11 +39,22 @@ function ast.new_node(text, options)
         color = nil,
         style = nil,
     }
+
+    if options and (options.name or options.id) then
+        local name = options.name or options.id
+        ast.named_nodes[name] = node
+        node.name = name
+    end
+
+    return node
 end
 
---- Resets the global node ID counter (useful for test runs).
+--- Resets the global node ID counter and registries.
 function ast.reset_counter()
     node_id_counter = 0
+    ast.named_nodes = {}
+    ast.summaries = {}
+    ast.relationships = {}
 end
 
 --- Adds a child node to a parent node, setting depth and parent reference.

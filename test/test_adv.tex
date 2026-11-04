@@ -1,0 +1,71 @@
+\documentclass{article}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{./tex/mindchart}
+
+\begin{document}
+
+\section*{Summary Brackets (\texttt{\textbackslash summary}) and Relationships (\texttt{\textbackslash rel})}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic]
+[Modern Web Platform
+  [Frontend Architecture
+    [HTML5 \& CSS3, name=fe_core]
+    [JavaScript / TypeScript, name=fe_js]
+    [Modern Frameworks
+      [React, name=fe_react]
+      [Vue, name=fe_vue]
+    ]
+  ]
+  [Backend Services
+    [Node.js Runtime, name=be_node]
+    [Rust Microservices, name=be_rust]
+    [Databases
+      [PostgreSQL, name=db_sql]
+      [Redis Cache, name=db_redis]
+    ]
+  ]
+  [Cloud Infrastructure
+    [Docker Containers, name=cloud_docker]
+    [Kubernetes Cluster, name=cloud_k8s]
+  ]
+]
+\summary{fe_core}{fe_js}{Web Standards}
+\summary{fe_react}{fe_vue}{Reactive UI}
+\summary{cloud_docker}{cloud_k8s}{Cloud Native}
+\rel[color=E74C3C, bend=35]{fe_js}{be_node}{Fullstack TypeScript}
+\rel[color=2980B9, bend=-30]{be_node}{db_sql}{ORM Database Queries}
+\end{mindchart}
+
+\vspace{1.5cm}
+
+\section*{Balanced Map with Summary and Cross-Branch Link}
+
+\begin{center}
+\begin{mindchart}[theme=business, layout=balanced, style=classic, scale=0.65]
+[Enterprise Project
+  [Engineering Team
+    [Frontend Devs, name=dev_fe]
+    [Backend Devs, name=dev_be]
+    [DevOps Engineers, name=dev_ops]
+  ]
+  [Product Team
+    [Product Managers, name=pm]
+    [UI/UX Designers, name=design]
+  ]
+  [Business Goals
+    [User Growth, name=goal_growth]
+    [Revenue Target, name=goal_rev]
+  ]
+  [Timeline
+    [Q1 MVP Launch, name=time_mvp]
+    [Q2 Global Release, name=time_prod]
+  ]
+]
+\summary{dev_fe}{dev_be}{Core Developers}
+\summary{pm}{design}{Product Strategy}
+\rel[color=E67E22, bend=25]{design}{dev_fe}{Design Handoff}
+\rel[color=16A085, bend=-25]{dev_ops}{time_mvp}{Continuous Delivery}
+\end{mindchart}
+\end{center}
+
+\end{document}

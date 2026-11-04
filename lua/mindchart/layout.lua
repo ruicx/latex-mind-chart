@@ -210,6 +210,59 @@ local function layout_unidirectional(root, direction, cfg)
     position_subtree(root, root.x, 0.0, direction, cfg)
 end
 
+--- Positions summary brackets and summary nodes.
+local function position_summaries(cfg)
+    for _, s in ipairs(ast.summaries) do
+        local from_node = ast.named_nodes[s.from]
+        local to_node = ast.named_nodes[s.to]
+        if from_node and to_node and s.node then
+            if not from_node.box_height then
+                compute_node_box(from_node, cfg)
+            end
+            if not to_node.box_height then
+                compute_node_box(to_node, cfg)
+            end
+            compute_node_box(s.node, cfg)
+            local is_right = (from_node.side ~= "left")
+            local side_str = is_right and "right" or "left"
+            s.node.side = side_str
+
+            local y1_top = from_node.y + (from_node.box_height / 2.0)
+            local y1_bot = from_node.y - (from_node.box_height / 2.0)
+            local y2_top = to_node.y + (to_node.box_height / 2.0)
+            local y2_bot = to_node.y - (to_node.box_height / 2.0)
+
+            local y_top = math.max(y1_top, y2_top)
+            local y_bot = math.min(y1_bot, y2_bot)
+            local y_mid = (y_top + y_bot) / 2.0
+            local w_amp = 10.0 -- Bracket amplitude
+
+            local x_bracket
+            if is_right then
+                local x_max = math.max(from_node.x + from_node.box_width, to_node.x + to_node.box_width)
+                x_bracket = x_max + 8.0
+                s.node.x = x_bracket + w_amp + 8.0
+                s.node.y = y_mid
+            else
+                local x_min = math.min(from_node.x, to_node.x)
+                x_bracket = x_min - 8.0
+                s.node.x = (x_bracket - w_amp - 8.0) - s.node.box_width
+                s.node.y = y_mid
+            end
+
+            s.bracket = {
+                x = x_bracket,
+                y_top = y_top,
+                y_bot = y_bot,
+                y_mid = y_mid,
+                w = w_amp,
+                side = side_str,
+                color = s.node.color or from_node.color,
+            }
+        end
+    end
+end
+
 --- Main layout entry point.
 --- @param root table
 --- @param options table
@@ -230,6 +283,9 @@ function layout.compute(root, options)
         -- Default: right
         layout_unidirectional(root, 1, cfg)
     end
+
+    -- Position any summary brackets
+    position_summaries(cfg)
 end
 
 return layout

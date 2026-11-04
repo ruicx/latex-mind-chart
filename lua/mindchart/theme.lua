@@ -101,9 +101,17 @@ function theme.apply(root, options)
 
         propagate(l1_node, l1_node.color)
     end
+
+    -- Style summary nodes
+    for _, s in ipairs(ast.summaries) do
+        local from_node = ast.named_nodes[s.from]
+        local base_color = (from_node and from_node.color) or root_color
+        s.node.color = s.options.color or base_color
+        s.node.style = s.options.style or "card"
+    end
 end
 
---- Converts a hex string like "#E74C3C" to RGB values (0-255).
+--- Converts a hex string like "#E74C3C" or "E74C3C" to RGB values (0-255).
 --- @param hex string
 --- @return number, number, number
 function theme.hex_to_rgb(hex)
@@ -115,6 +123,20 @@ function theme.hex_to_rgb(hex)
         return r, g, b
     end
     return 0, 0, 0
+end
+
+--- Converts a hex color or named color to a TikZ color expression.
+--- @param col string
+--- @return string
+function theme.to_tikz_color(col)
+    if not col or col == "" then return "black" end
+    local clean = col:gsub("#", "")
+    if #clean == 6 and clean:match("^%x+$") then
+        local r, g, b = theme.hex_to_rgb(clean)
+        return string.format("{rgb,255:red,%d;green,%d;blue,%d}", r, g, b)
+    else
+        return col
+    end
 end
 
 return theme
