@@ -17,46 +17,48 @@ The current mainstream solution for mind mapping in LaTeX is the TikZ `mindmap` 
 
 ## 2. Technical Stack & Rationale
 
-After evaluating pure TeX/TikZ, TikZ+Forest, external Python preprocessors, and native LuaTeX, the project adopts the **LuaTeX (Lua 5.3+) + TikZ rendering pipeline**:
+The project adopts the **LuaTeX (Lua 5.3+) + TikZ rendering pipeline**:
 
+- **LaTeX Interface Layer**:
+  - Leverages standard LaTeX2e kernel `\NewDocumentEnvironment{mindchart}{ O{} +b }` for robust unexpanded verbatim-like body capture.
+  - Zero external legacy environment dependencies (e.g. no dependency on `environ.sty`).
 - **Computation & Layout Engine (Lua 5.3+)**:
-  - Parses user input into a tree Abstract Syntax Tree (AST).
+  - Parses user input into a tree Abstract Syntax Tree (AST) and overlays (`\summary`, `\rel`).
   - Performs recursive tree layout and collision avoidance algorithms.
   - Automatically balances subtrees across left and right sides.
-  - Calculates cubic Bézier curve control points and precise underline anchor coordinates.
+  - Calculates cubic Bézier curve control points, mathematical curly braces, and precise underline anchor coordinates.
 - **Rendering Engine (TikZ/PGF)**:
   - Consumes generated TikZ drawing primitives from Lua to render vector PDFs.
 - **Key Justifications**:
   1. **Zero External Toolchain Dependencies**: Operates natively in standard TeX distributions (TeX Live, MacTeX, MiKTeX) and cloud platforms (e.g., Overleaf) without requiring Python or `-shell-escape`.
   2. **Sub-millimeter Exact Dimension Probing**: Lua directly queries TeX internal boxes (`tex.box`), obtaining exact rendered widths, heights, and depths of any LaTeX fragment (including math formulas, CJK characters, and custom macros) prior to layout.
-  3. **Algorithmic Elegance & Performance**: Tree geometry, bin-packing balancing, and collision avoidance can be implemented cleanly and efficiently in Lua compared to TeX macro expansions.
+  3. **Algorithmic Elegance & Performance**: Tree geometry, bin-packing balancing, and collision avoidance are implemented cleanly and efficiently in Lua.
 
 ---
 
 ## 3. Functional Requirements
 
-### 3.1 Three-Axis Orthogonal Configuration System
+### 3.1 Core Configuration System
 
-The package must support independent, composable switching across three dimensions: **Layout**, **Visual Style**, and **Color Theme**.
+The package supports independent, composable switching across **Layout**, **Visual Style**, **Color Theme**, and **Scale**.
 
 ```
-              ┌────────────────────────────────────────┐
-              │ Configuration Matrix                   │
-              ├─────────────┬─────────────┬────────────┤
-              │   Layout    │ Visual Style│ Color Theme│
-              ├─────────────┼─────────────┼────────────┤
-              │ right       │ classic     │ rainbow    │
-              │ balanced    │ boxed       │ business   │
-              │ left        │ underline   │ forest     │
-              │ (down/org)  │ elbow       │ monochrome │
-              └─────────────┴─────────────┴────────────┘
+              ┌────────────────────────────────────────────────────────┐
+              │ Configuration Matrix                                   │
+              ├─────────────┬─────────────┬────────────┬───────────────┤
+              │   Layout    │ Visual Style│ Color Theme│   Line Type   │
+              ├─────────────┼─────────────┼────────────┼───────────────┤
+              │ right       │ classic     │ rainbow    │ curve (S-arc) │
+              │ balanced    │ boxed       │ business   │ elbow (angle) │
+              │ left        │ underline   │ forest     │ straight      │
+              │             │             │ monochrome │               │
+              └─────────────┴─────────────┴────────────┴───────────────┘
 ```
 
 #### 3.1.1 Layout Modes (`layout = <name>`)
 - **`right` (Logic Chart Right)**: Root on the far left, expanding strictly to the right. Ideal for process flows, outlines, and causal trees.
-- **`balanced` (Balanced Mind Map)**: Root centered, primary branches distributed automatically across left and right sides based on subtree heights.
+- **`balanced` (Balanced Mind Map)**: Root centered, primary branches distributed automatically across left and right sides based on subtree heights via greedy bin-packing.
 - **`left` (Logic Chart Left)**: Root on the far right, expanding strictly to the left.
-- **`down` / `org` (Post-MVP)**: Downward organizational hierarchy layout.
 
 #### 3.1.2 Visual Styles (`style = <name>`)
 - **`classic` (XMind Default)**:
@@ -66,40 +68,64 @@ The package must support independent, composable switching across three dimensio
   - Connectors: Smooth organic cubic Bézier S-curves.
 - **`boxed`**: All hierarchy levels use rounded rectangular cards/frames with progressively lighter borders and paddings.
 - **`underline` / `minimal`**: All non-root nodes use minimalist underline support lines.
-- **`elbow`**: Engineering/architectural layout with rounded orthogonal elbow lines.
 
-#### 3.1.3 Color Themes (`theme = <name>`)
+#### 3.1.3 Connector Line Styles (`line = <name>`)
+- **`curve`**: Smooth cubic Bézier S-curves with horizontal entrance/exit tangents.
+- **`elbow`**: Rounded orthogonal elbow lines (3pt corner radius).
+- **`straight`**: Direct straight lines.
+
+#### 3.1.4 Color Themes (`theme = <name>`)
 - **Theme Color Propagation**: Each Level 1 branch receives a distinct theme color, which automatically propagates to all descendant nodes and connecting curves.
 - **Built-in Palettes**:
   - `rainbow`: Distinct vibrant colors (red, orange, green, cyan, blue, purple) cyclically assigned.
   - `business`: Professional navy, slate blue, teal, and steel blue shades suitable for technical reports and academic papers.
   - `forest`: Deep green, sage, olive, and warm bronze tones.
   - `monochrome`: Grayscale and black line frames optimized for traditional monochrome journal publication.
-- **Custom Palette API**: Provide an interface for users to register custom hexadecimal or RGB color lists.
+- **Color Format Flexibility**: Supports standard hex codes (e.g. `color=E74C3C` or `color=#E74C3C`) and named LaTeX xcolors (`color=red`, `color=blue`).
 
-### 3.2 User Syntax & Authoring Experience
-- Provide clear environment syntax (`\begin{mindchart}[<options>] ... \end{mindchart}`).
-- Support hierarchical bracket notation (e.g., `[Root [Topic 1 [Subtopic 1]] [Topic 2]]`).
-- Support optional indented list / Markdown-like notation.
-- Allow arbitrary LaTeX content inside node text (e.g., inline math `$\sum_{i=1}^n x_i$`, formatting macros, line breaks).
-- Support per-node attribute overrides (e.g., `[Topic 1, color=red, side=left]`).
-
-### 3.3 Advanced Features (Post-MVP)
-1. **Summaries (Brackets)**: Curly brackets grouping multiple sibling nodes to spawn a summary topic node.
-2. **Relationships**: Curved dashed arrows connecting non-adjacent nodes with optional annotation labels.
-3. **Boundaries**: Highlight boxes/halos enclosing specific subtrees.
-4. **Tags & Badges**: Micro-labels, numbering badges, and callout markers alongside node text.
+#### 3.1.5 Scaling (`scale = <factor>`)
+- Support scaling down or up whole charts (e.g., `scale=0.8`) to fit page constraints gracefully.
 
 ---
 
-## 4. Non-Functional Requirements
+### 3.2 Overlay Elements: Summaries and Relationships
 
-1. **Rendering Robustness & Alignment Accuracy**:
-   - Zero node overlapping and collision-free tree layouts.
-   - Exact baseline docking for underline-style subtopics (no vertical gaps or floating text).
-2. **Performance**:
-   - Near-instantaneous layout calculation for typical mind maps (< 200 nodes) in Lua.
-3. **Clean Decoupling & Maintainability**:
-   - Strict separation between parsing, dimension measurement, geometric layout, curve generation, and TikZ rendering.
-4. **CTAN Packaging Compatibility**:
-   - Organized following standard TeX Directory Structure (TDS) for seamless packaging and distribution.
+#### 3.2.1 Summary Brackets (`\summary`)
+- Group a range of sibling nodes using a mathematically smooth cubic Bézier curly bracket (`}` or `{`).
+- Sprout a summary topic card at the cusp of the bracket.
+- Syntax: `\summary[options]{from_node}{to_node}{Summary Label}`.
+
+#### 3.2.2 Cross-Branch Relationships (`\rel`)
+- Connect any two arbitrary nodes across different branches with a curved, dashed arrow.
+- Support centered label badges with white background padding.
+- Syntax: `\rel[options]{from_node}{to_node}{Label Text}`.
+  - Options: `color=<color>`, `bend=<degrees>`, `line=<dashed|solid|dotted>`.
+
+---
+
+### 3.3 User Syntax & Authoring Experience
+
+1. **Environment Interface**:
+   ```latex
+   \begin{mindchart}[layout=..., theme=..., style=..., line=..., scale=...]
+   [Root
+     [Branch 1, name=b1
+       [Subtopic 1, name=s1]
+     ]
+     [Branch 2, name=b2]
+   ]
+   \summary{s1}{b2}{Summary Text}
+   \rel{s1}{b2}{Relationship Text}
+   \end{mindchart}
+   ```
+2. **Node Naming**: Support `name=<id>` and `id=<id>` for referencing in overlays.
+3. **TeX Content Preservation**: Full support for inline math formulas (e.g. `$\hat{y} = Wx + b$`), formatting macros (`\textbf`, `\mathcal`), and special characters without pre-expansion breakage.
+
+---
+
+### 3.4 Future Roadmap (Post-MVP)
+
+1. **Markdown Indented List Notation**: Option to author trees using `- item` indentation.
+2. **Tapered Stroke Ribbon Paths**: True variable-width brush ribbon connectors.
+3. **Boundaries**: Highlight boxes/halos enclosing specific subtrees.
+4. **Tags & Badges**: Micro-labels, numbering badges, and callout markers alongside node text.
