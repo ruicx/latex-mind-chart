@@ -210,41 +210,90 @@ local function layout_unidirectional(root, direction, cfg)
     position_subtree(root, root.x, 0.0, direction, cfg)
 end
 
+--- Helper to collect a node and all its descendants recursively.
+local function collect_subtree_nodes(n, acc)
+    table.insert(acc, n)
+    if n.children then
+        for _, child in ipairs(n.children) do
+            collect_subtree_nodes(child, acc)
+        end
+    end
+end
+
 --- Positions summary brackets and summary nodes.
 local function position_summaries(cfg)
     for _, s in ipairs(ast.summaries) do
         local from_node = ast.named_nodes[s.from]
         local to_node = ast.named_nodes[s.to]
         if from_node and to_node and s.node then
-            if not from_node.box_height then
-                compute_node_box(from_node, cfg)
-            end
-            if not to_node.box_height then
-                compute_node_box(to_node, cfg)
-            end
             compute_node_box(s.node, cfg)
             local is_right = (from_node.side ~= "left")
             local side_str = is_right and "right" or "left"
             s.node.side = side_str
 
-            local y1_top = from_node.y + (from_node.box_height / 2.0)
-            local y1_bot = from_node.y - (from_node.box_height / 2.0)
-            local y2_top = to_node.y + (to_node.box_height / 2.0)
-            local y2_bot = to_node.y - (to_node.box_height / 2.0)
+            -- Collect all nodes in the summarized range
+            local nodes_in_range = {}
+            if from_node.parent and from_node.parent == to_node.parent then
+                local p = from_node.parent
+                local idx_from, idx_to
+                for i, c in ipairs(p.children) do
+                    if c == from_node then idx_from = i end
+                    if c == to_node then idx_to = i end
+                end
+                if idx_from and idx_to then
+                    local s_idx = math.min(idx_from, idx_to)
+                    local e_idx = math.max(idx_from, idx_to)
+                    for i = s_idx, e_idx do
+                        table.insert(nodes_in_range, p.children[i])
+                    end
+                else
+                    table.insert(nodes_in_range, from_node)
+                    if from_node ~= to_node then
+                        table.insert(nodes_in_range, to_node)
+                    end
+                end
+            else
+                table.insert(nodes_in_range, from_node)
+                if from_node ~= to_node then
+                    table.insert(nodes_in_range, to_node)
+                end
+            end
 
-            local y_top = math.max(y1_top, y2_top)
-            local y_bot = math.min(y1_bot, y2_bot)
+            -- Encompass all descendants of the summarized nodes so brackets don't overlap children
+            local all_nodes = {}
+            for _, n in ipairs(nodes_in_range) do
+                collect_subtree_nodes(n, all_nodes)
+            end
+
+            local y_top = -math.huge
+            local y_bot = math.huge
+            local x_max = -math.huge
+            local x_min = math.huge
+
+            for _, n in ipairs(all_nodes) do
+                if not n.box_height then
+                    compute_node_box(n, cfg)
+                end
+                local nt = n.y + (n.box_height / 2.0)
+                local nb = n.y - (n.box_height / 2.0)
+                local nr = n.x + n.box_width
+                local nl = n.x
+
+                if nt > y_top then y_top = nt end
+                if nb < y_bot then y_bot = nb end
+                if nr > x_max then x_max = nr end
+                if nl < x_min then x_min = nl end
+            end
+
             local y_mid = (y_top + y_bot) / 2.0
             local w_amp = 10.0 -- Bracket amplitude
 
             local x_bracket
             if is_right then
-                local x_max = math.max(from_node.x + from_node.box_width, to_node.x + to_node.box_width)
                 x_bracket = x_max + 8.0
                 s.node.x = x_bracket + w_amp + 8.0
                 s.node.y = y_mid
             else
-                local x_min = math.min(from_node.x, to_node.x)
                 x_bracket = x_min - 8.0
                 s.node.x = (x_bracket - w_amp - 8.0) - s.node.box_width
                 s.node.y = y_mid
