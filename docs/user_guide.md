@@ -207,3 +207,7 @@ Draws a curved, dashed arrow with an annotation badge connecting any two nodes:
 - `color=<hex|name>`: Line and arrow color (default: `#E74C3C`).
 - `bend=<degrees>`: Curve angle (positive bends left, negative bends right, default: `25`).
 - `line=<dashed|solid|dotted>`: Line stroke style (default: `dashed`).
+- `pos=<factor|keyword>`: Position of label along path (`pos=0.3`, `pos=0.7`, `near start`, `near end`, default: `midway`). Useful to avoid obscuring nearby text.
+- `side=<placement>`: Placement relative to line (`above`, `below`, `auto`, `sloped`).
+- `from_anchor=<anchor>`, `to_anchor=<anchor>`: Specific node docking points (`north`, `south`, `east`, `west`). Defaults to automatic boundary clipping.
+- `fill=<color|none>`: Background fill for label badge (default: `white`, set `none` for transparent).

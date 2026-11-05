@@ -34,28 +34,28 @@ local function render_node(node)
     if node.style == "capsule" or node.depth == 0 then
         -- Root / Capsule: Solid fill, high contrast white text, bold
         return string.format(
-            "\\node[fill=%s, rounded corners=6pt, text=white, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
-            col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
         )
     elseif node.style == "card" then
         -- Level 1 Card: Rounded box with colored border and white background
         return string.format(
-            "\\node[draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
-            col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
         )
     elseif node.style == "boxed" then
         -- Boxed: Clean thin border card
         return string.format(
-            "\\node[draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
-            col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
         )
     else
         -- Underline style: Text sits directly on top of the underline
         local tx = node.x + node.pad_x + (node.width / 2.0)
         local ty = node.y
         return string.format(
-            "\\node[anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
-            tx, ty, node.text
+            "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt] at (%.2fpt, %.2fpt) {%s};",
+            node.id, tx, ty, node.text
         )
     end
 end

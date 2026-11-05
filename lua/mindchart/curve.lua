@@ -156,32 +156,87 @@ function curve.generate_relationship(r, from_node, to_node)
     local opts = r.options or {}
     local col = theme.to_tikz_color(opts.color or "#E74C3C")
     local line_type = opts.line or "dashed"
-    local bend = opts.bend or "25"
+
+    -- Bend calculation: support bend=X, bend=-X, bend_left=X, bend_right=X
     local bend_clause = ""
-    if bend:match("^%-?%d+$") then
-        local num = tonumber(bend)
-        if num and num < 0 then
-            bend_clause = string.format("bend right=%d", math.abs(num))
-        else
-            bend_clause = string.format("bend left=%s", bend)
-        end
+    if opts["bend left"] or opts.bend_left then
+        bend_clause = string.format("bend left=%s", opts["bend left"] or opts.bend_left)
+    elseif opts["bend right"] or opts.bend_right then
+        bend_clause = string.format("bend right=%s", opts["bend right"] or opts.bend_right)
     else
-        bend_clause = "bend left=25"
+        local bend = opts.bend or "25"
+        if bend:match("^%-?%d+$") then
+            local num = tonumber(bend)
+            if num and num < 0 then
+                bend_clause = string.format("bend right=%d", math.abs(num))
+            else
+                bend_clause = string.format("bend left=%s", bend)
+            end
+        else
+            bend_clause = "bend left=25"
+        end
     end
 
-    local ax = from_node.x + (from_node.box_width / 2.0)
-    local ay = from_node.y
-    local bx = to_node.x + (to_node.box_width / 2.0)
-    local by = to_node.y
+    -- Node boundary anchors: uses named TikZ nodes for automatic border clipping,
+    -- or explicit anchors (e.g. from_anchor=south, to_anchor=west).
+    local from_anchor = opts.from_anchor or opts.anchor_from
+    local to_anchor = opts.to_anchor or opts.anchor_to
 
+    local from_spec = from_anchor and string.format("(mc_node_%d.%s)", from_node.id, from_anchor)
+                                  or string.format("(mc_node_%d)", from_node.id)
+    local to_spec = to_anchor and string.format("(mc_node_%d.%s)", to_node.id, to_anchor)
+                              or string.format("(mc_node_%d)", to_node.id)
+
+    -- Label positioning and styling
     local label_code = ""
     if r.text and r.text ~= "" then
-        label_code = string.format(" node[midway, fill=white, rounded corners=2pt, inner sep=2pt, font=\\scriptsize, text={rgb,255:red,44;green,62;blue,80}] {%s}", r.text)
+        local node_attrs = {}
+
+        -- Position along path: pos=0.3, midway, near start, near end, etc.
+        local pos = opts.pos
+        if pos then
+            if tonumber(pos) then
+                table.insert(node_attrs, string.format("pos=%s", pos))
+            else
+                table.insert(node_attrs, pos)
+            end
+        else
+            table.insert(node_attrs, "midway")
+        end
+
+        -- Placement side / orientation: above, below, auto, sloped
+        local side = opts.side or opts.align or opts.placement
+        if side then
+            table.insert(node_attrs, side)
+        end
+        if opts.above then table.insert(node_attrs, "above") end
+        if opts.below then table.insert(node_attrs, "below") end
+        if opts.sloped then table.insert(node_attrs, "sloped") end
+        if opts.auto then table.insert(node_attrs, "auto") end
+
+        -- Background fill (default: white, or none/color)
+        local fill = opts.fill or "white"
+        if fill ~= "none" and fill ~= "false" then
+            local fill_col = theme.to_tikz_color(fill)
+            table.insert(node_attrs, string.format("fill=%s", fill_col))
+            local fill_op = opts.fill_opacity or opts.opacity
+            if fill_op then
+                table.insert(node_attrs, string.format("fill opacity=%s", fill_op))
+            end
+        end
+
+        local inner_sep = opts.inner_sep or opts.padding or "2pt"
+        table.insert(node_attrs, string.format("inner sep=%s", inner_sep))
+        table.insert(node_attrs, "rounded corners=2pt")
+        table.insert(node_attrs, "font=\\scriptsize")
+        table.insert(node_attrs, "text={rgb,255:red,44;green,62;blue,80}")
+
+        label_code = string.format(" node[%s] {%s}", table.concat(node_attrs, ", "), r.text)
     end
 
     local cmd = string.format(
-        "\\draw[draw=%s, %s, ->, >=stealth, line width=1.1pt] (%.2fpt, %.2fpt) to[%s]%s (%.2fpt, %.2fpt);",
-        col, line_type, ax, ay, bend_clause, label_code, bx, by
+        "\\draw[draw=%s, %s, ->, >=stealth, line width=1.1pt] %s to[%s]%s %s;",
+        col, line_type, from_spec, bend_clause, label_code, to_spec
     )
     return cmd
 end
