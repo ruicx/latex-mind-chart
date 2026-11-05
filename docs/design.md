@@ -12,8 +12,8 @@
                                                 ▼
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │ 1. TeX Interface Layer (mindchart.sty & mindchart.lua)                                 │
-│    - Captures raw environment content via LaTeX2e \NewDocumentEnvironment (+b)        │
-│    - Prevents premature macro expansion with \unexpanded                               │
+│    - Intercepts raw input lines verbatim via LuaTeX's process_input_buffer callback    │
+│    - Preserves indentation spaces and prevents TeX catcode corruption                  │
 │    - Registers custom Lua module searcher for reliable sub-package loading             │
 │    - Provides \summary and \rel overlay commands                                       │
 └───────────────────────────────────────┬────────────────────────────────────────────────┘
@@ -126,11 +126,21 @@ In `ast.lua`:
 
 ## 4. Pipeline Execution Stages
 
-### Stage 1: Input Parsing (`parser.lua`)
-1. **Overlay Extraction**:
+### Stage 1: Input Parsing & Auto-Detection (`parser.lua` & `init.lua`)
+1. **Auto-Detection**:
+   - `init.lua` inspects the trimmed input stream:
+     - If the first non-whitespace character is `[`, invokes `parser.parse_bracket`.
+     - Otherwise, invokes `parser.parse_markdown`.
+     - Explicit override supported via `syntax=markdown` or `syntax=bracket`.
+2. **Overlay Extraction (`parse_command_invocations`)**:
    - Scans input for `\summary[options]{from}{to}{label}` and `\rel[options]{from}{to}{label}`.
    - Instantiates dedicated summary nodes and registers overlay descriptors.
-2. **Bracket Tree Parsing**:
+3. **Markdown Indented List Parsing (`parser.parse_markdown`)**:
+   - Iterates lines, expanding tabs and calculating column indentation.
+   - Recognizes Markdown headings (`#`, `##`, `###`) and list bullets (`-`, `*`, `+`, `1.`).
+   - Uses a stack-based algorithm (`indent_stack` & `node_stack`) to resolve parent-child relationships across indentations and dedentations.
+   - Protects math mode (`$...$`) and LaTeX braces (`{...}`) to prevent commas inside formulas from prematurely triggering option parsing.
+4. **Bracket Tree Parsing (`parser.parse_bracket`)**:
    - Parses nested bracket tokens `[Node declaration [Child 1] [Child 2]]`.
    - Tracks brace balance depth (`{...}`) to ensure LaTeX macros and math formulas with internal brackets/commas are never misidentified as tree tokens.
    - Extracts node options (e.g. `name=...`, `id=...`, `color=...`).

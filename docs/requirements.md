@@ -105,27 +105,47 @@ The package supports independent, composable switching across **Layout**, **Visu
 
 ### 3.3 User Syntax & Authoring Experience
 
-1. **Environment Interface**:
+The package provides two authoring syntaxes with automatic format detection:
+
+1. **Markdown Indented List Notation (Recommended)**:
    ```latex
-   \begin{mindchart}[layout=..., theme=..., style=..., line=..., scale=...]
-   [Root
-     [Branch 1, name=b1
-       [Subtopic 1, name=s1]
-     ]
-     [Branch 2, name=b2]
-   ]
-   \summary{s1}{b2}{Summary Text}
-   \rel{s1}{b2}{Relationship Text}
+   \begin{mindchart}[layout=right, theme=rainbow]
+   # Deep Learning Architecture
+     - Input Layer
+     - Representation Learning, name=rep
+       - Convolutional Backbone, name=cnn
+       - Attention Transformer, name=tf
+     - Output Classifier, name=out
+       - Softmax Probability
+   \summary{cnn}{tf}{Feature Extractors}
+   \rel[bend=30]{rep}{out}{Representation Flow}
    \end{mindchart}
    ```
-2. **Node Naming**: Support `name=<id>` and `id=<id>` for referencing in overlays.
-3. **TeX Content Preservation**: Full support for inline math formulas (e.g. `$\hat{y} = Wx + b$`), formatting macros (`\textbf`, `\mathcal`), and special characters without pre-expansion breakage.
+   - Automatically supports `# Heading` syntax, indented bullet items (`-`, `*`, `+`, `1.`), and plain indented text.
+   - Spaces and tabs are preserved without LaTeX catcode corruption using LuaTeX buffer hooks.
+
+2. **Bracket Tree Notation**:
+   ```latex
+   \begin{mindchart}[layout=balanced, theme=forest]
+   [Deep Learning Architecture
+     [Representation Learning, name=rep
+       [Convolutional Backbone, name=cnn]
+       [Attention Transformer, name=tf]
+     ]
+     [Output Classifier, name=out]
+   ]
+   \summary{cnn}{tf}{Feature Extractors}
+   \rel[bend=30]{rep}{out}{Representation Flow}
+   \end{mindchart}
+   ```
+
+3. **Node Naming & Options**: Support `name=<id>` and `id=<id>` for referencing in overlays, `color=<hex|name>` for branch overrides, and `side=left|right` for balanced trees.
+4. **TeX Content Preservation**: Full support for inline math formulas (e.g. `$\hat{y} = Wx + b$`), formatting macros (`\textbf`, `\mathcal`), and special characters without pre-expansion breakage.
 
 ---
 
 ### 3.4 Future Roadmap (Post-MVP)
 
-1. **Markdown Indented List Notation**: Option to author trees using `- item` indentation.
-2. **Tapered Stroke Ribbon Paths**: True variable-width brush ribbon connectors.
-3. **Boundaries**: Highlight boxes/halos enclosing specific subtrees.
-4. **Tags & Badges**: Micro-labels, numbering badges, and callout markers alongside node text.
+1. **Tapered Stroke Ribbon Paths**: True variable-width brush ribbon connectors.
+2. **Boundaries**: Highlight boxes/halos enclosing specific subtrees.
+3. **Tags & Badges**: Micro-labels, numbering badges, and callout markers alongside node text.

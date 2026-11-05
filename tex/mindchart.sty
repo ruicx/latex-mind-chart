@@ -3,6 +3,7 @@
 
 \RequirePackage{iftex}
 \RequireLuaTeX
+\RequirePackage{luatexbase}
 
 \RequirePackage{tikz}
 \RequirePackage{xcolor}
@@ -27,6 +28,8 @@
 \NewDocumentCommand{\summary}{ O{} m m m }{}
 \NewDocumentCommand{\rel}{ O{} m m m }{}
 
-\NewDocumentEnvironment{mindchart}{ O{} +b }{%
-    \directlua{mindchart.prepare([==[\unexpanded{#2}]==], "#1")}%
-}{}
+\newenvironment{mindchart}[1][]{%
+    \directlua{mindchart.start_env([==[#1]==])}%
+}{%
+    \directlua{mindchart.finish_env()}%
+}

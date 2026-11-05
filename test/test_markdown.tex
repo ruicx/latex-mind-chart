@@ -1,0 +1,69 @@
+\documentclass{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{./tex/mindchart}
+
+\begin{document}
+
+\section*{MindChart Markdown Syntax Test Suite}
+
+\subsection*{1. Markdown Indented List with Overlays \& Math (Logic Chart Right)}
+
+\begin{mindchart}[layout=right, theme=rainbow, style=classic, line=curve, scale=0.9]
+# Deep Learning System, color=2ECC71
+  - Data Preprocessing, name=data, color=3498DB
+    - Tokenization \& Cleaning
+    - Feature Scaling: $x' = \frac{x - \mu}{\sigma}$
+  - Representation Learning, name=rep, color=E74C3C
+    - Convolutional Backbone, name=cnn
+      - ResNet-50
+      - EfficientNet-V2
+    - Attention Transformer, name=tf
+      - Multi-Head Self-Attention
+      - Feed-Forward Network
+  - Output Classifier, name=out, color=F39C12
+    - Logits \& Linear Layer: $\hat{y} = Wx + b$
+    - Softmax Activation: $P(y|x) = \frac{e^{z_i}}{\sum e^{z_j}}$
+\summary[color=E74C3C]{cnn}{tf}{Feature Extractors}
+\rel[bend=35, color=9B59B6]{data}{tf}{Direct Token Embedding}
+\end{mindchart}
+
+\newpage
+
+\subsection*{2. Markdown Balanced Map with Underline Style}
+
+\begin{mindchart}[layout=balanced, theme=forest, style=underline, line=curve, scale=0.78]
+# Software Architecture
+  - Frontend Layer, side=left
+    - Web Single Page App
+    - Mobile Native Clients
+    - Offline Cache Storage
+  - Infrastructure, side=left
+    - Kubernetes Cluster
+    - Monitoring \& Metrics
+  - Backend Services, side=right
+    - Authentication Gateway
+    - REST \& gRPC Endpoints
+    - Event Streaming Bus
+  - Persistent Data, side=right
+    - PostgreSQL Relational DB
+    - Redis In-Memory Cache
+\end{mindchart}
+
+\bigskip
+
+\subsection*{3. Pure Heading Hierarchy (\#\# / \#\#\#)}
+
+\begin{mindchart}[layout=right, theme=business, style=boxed, line=elbow, scale=0.85]
+# Antigravity CLI Platform
+## Agent Runtime
+### Tool Orchestration
+### Conversation Memory
+## Execution Engine
+### Process Sandbox
+### Subagent Delegation
+## Code Intelligence
+### Static Type Checking
+### Dependency Analysis
+\end{mindchart}
+
+\end{document}

@@ -15,6 +15,9 @@ local mindchart = {}
 local current_ast = nil
 local current_options = {}
 
+local env_buffer_lines = {}
+local env_options_str = ""
+
 --- Parses raw key-value string from LaTeX into a Lua table.
 local function parse_options_string(str)
     local opts = {}
@@ -33,12 +36,61 @@ local function parse_options_string(str)
     return opts
 end
 
+--- Detects syntax mode: "bracket" or "markdown".
+local function detect_syntax(input, opts)
+    if opts.syntax == "markdown" or opts.syntax == "md" then
+        return "markdown"
+    elseif opts.syntax == "bracket" then
+        return "bracket"
+    end
+    -- Auto-detect: if first non-whitespace character is '[', treat as bracket notation
+    local first_char = input:match("^%s*(%S)")
+    if first_char == "[" then
+        return "bracket"
+    else
+        return "markdown"
+    end
+end
+
+--- Called at \begin{mindchart}[opts] to start recording raw input buffer lines.
+--- This preserves exact spaces and indentation without TeX catcode interference.
+--- @param opt_str string
+function mindchart.start_env(opt_str)
+    env_buffer_lines = {}
+    env_options_str = opt_str or ""
+
+    luatexbase.add_to_callback("process_input_buffer", function(line)
+        local prefix, suffix = line:match("^(.-)\\end%s*%{%s*mindchart%s*%}(.*)$")
+        if prefix then
+            if prefix:match("%S") then
+                table.insert(env_buffer_lines, prefix)
+            end
+            luatexbase.remove_from_callback("process_input_buffer", "mindchart_buffer")
+            return "\\end{mindchart}" .. suffix
+        end
+        table.insert(env_buffer_lines, line)
+        return ""
+    end, "mindchart_buffer")
+end
+
+--- Called at \end{mindchart} to finalize and execute the environment.
+function mindchart.finish_env()
+    local raw_input = table.concat(env_buffer_lines, "\n")
+    mindchart.prepare(raw_input, env_options_str)
+end
+
 --- Step 1: Prepares AST from raw input and kicks off measurement in TeX.
 --- @param raw_input string
 --- @param opt_str string
 function mindchart.prepare(raw_input, opt_str)
     current_options = parse_options_string(opt_str)
-    current_ast = parser.parse_bracket(raw_input)
+    local syntax = detect_syntax(raw_input, current_options)
+
+    if syntax == "markdown" then
+        current_ast = parser.parse_markdown(raw_input)
+    else
+        current_ast = parser.parse_bracket(raw_input)
+    end
 
     if not current_ast then
         texio.write_nl("mindchart error: failed to parse tree input.")

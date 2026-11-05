@@ -61,10 +61,11 @@ end
 
 --- Separates node declaration into text and options.
 --- E.g., "Central Topic, color=red, side=left" -> text: "Central Topic", options: {color="red", side="left"}
---- If commas exist without '=', they are kept as part of text unless followed by key=val.
+--- Respects braces '{...}' and math mode '$...$'.
 local function parse_node_declaration(decl)
     decl = trim(decl)
     local brace_level = 0
+    local in_math = false
     local text_parts = {}
     local opt_start = nil
 
@@ -72,16 +73,19 @@ local function parse_node_declaration(decl)
     local len = #decl
     while i <= len do
         local c = decl:sub(i, i)
-        if c == "{" then
+        if c == "$" and (i == 1 or decl:sub(i - 1, i - 1) ~= "\\") then
+            in_math = not in_math
+            table.insert(text_parts, c)
+        elseif c == "{" and not in_math then
             brace_level = brace_level + 1
             table.insert(text_parts, c)
-        elseif c == "}" then
+        elseif c == "}" and not in_math then
             if brace_level > 0 then brace_level = brace_level - 1 end
             table.insert(text_parts, c)
-        elseif c == "," and brace_level == 0 then
+        elseif c == "," and brace_level == 0 and not in_math then
             -- Check if what follows resembles key=value
             local rest = decl:sub(i + 1)
-            if rest:match("^%s*[%w%-_]+%s*=") or rest:match("^%s*side%s*=") or rest:match("^%s*color%s*=") then
+            if rest:match("^%s*[%w%-_]+%s*=") then
                 opt_start = i + 1
                 break
             else
@@ -333,19 +337,155 @@ function parser.parse_bracket(input)
         i = i + 1
     end
 
-    -- Process summaries: create dedicated summary nodes
-    for _, s in ipairs(raw_summaries) do
-        local s_node = ast.new_node(s.text, s.options)
-        s_node.is_summary = true
-        s_node.style = s.options.style or "card"
-        s.node = s_node
-        table.insert(ast.summaries, s)
+    -- Process summaries and relationships
+    local function process_overlays(summaries, rels)
+        for _, s in ipairs(summaries) do
+            local s_node = ast.new_node(s.text, s.options)
+            s_node.is_summary = true
+            s_node.style = s.options.style or "card"
+            s.node = s_node
+            table.insert(ast.summaries, s)
+        end
+
+        for _, r in ipairs(rels) do
+            table.insert(ast.relationships, r)
+        end
     end
 
-    -- Process relationships
-    for _, r in ipairs(raw_rels) do
-        table.insert(ast.relationships, r)
+    process_overlays(raw_summaries, raw_rels)
+
+    return root
+end
+
+--- Parses markdown-style indented list or heading notation into an AST.
+--- Supports:
+---   # Root Heading
+---     - Branch 1, name=b1
+---       - Subtopic 1.1
+---     - Branch 2
+--- Also supports pure bullets (- / * / + / 1.), pure headings (## / ###), or unadorned indented text.
+--- @param input string
+--- @return table|nil Root node of AST
+function parser.parse_markdown(input)
+    if not input or input == "" then return nil end
+
+    ast.reset_counter()
+
+    -- Extract overlays (\summary and \rel)
+    local raw_summaries, raw_rels = parse_command_invocations(input)
+
+    local root = nil
+    -- Stack items: { node = Node, indent = number, heading_level = number }
+    local stack = {}
+
+    -- Helper to process overlays
+    local function process_overlays(summaries, rels)
+        for _, s in ipairs(summaries) do
+            local s_node = ast.new_node(s.text, s.options)
+            s_node.is_summary = true
+            s_node.style = s.options.style or "card"
+            s.node = s_node
+            table.insert(ast.summaries, s)
+        end
+
+        for _, r in ipairs(rels) do
+            table.insert(ast.relationships, r)
+        end
     end
+
+    for raw_line in input:gmatch("[^\r\n]+") do
+        if raw_line:match("%S") then
+            -- Expand tabs to 4 spaces
+            local line = raw_line:gsub("\t", "    ")
+            local indent_str = line:match("^(%s*)")
+            local indent = #indent_str
+            local trimmed = trim(line)
+
+            -- Skip TeX comments or overlay command lines (already extracted)
+            if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") then
+                -- Determine if line is a markdown heading (#...) or bullet list item
+                local hashes, h_content = trimmed:match("^(#+)%s*(.*)$")
+                local h_level = hashes and #hashes or 0
+                local decl = nil
+
+                if h_level > 0 then
+                    decl = h_content
+                else
+                    -- Check for list bullet: '-', '*', '+', or '1.', '2.', etc.
+                    local bullet, b_content = trimmed:match("^([%-%*%+])%s+(.*)$")
+                    if not bullet then
+                        bullet, b_content = trimmed:match("^(%d+[%.)])%s+(.*)$")
+                    end
+
+                    if bullet then
+                        decl = b_content
+                    else
+                        decl = trimmed
+                    end
+                end
+
+                if decl and decl ~= "" then
+                    local text, opts = parse_node_declaration(decl)
+                    local new_node = ast.new_node(text, opts)
+                    if opts.name or opts.id then
+                        local n = opts.name or opts.id
+                        ast.named_nodes[n] = new_node
+                        new_node.name = n
+                    end
+
+                    if not root then
+                        root = new_node
+                        table.insert(stack, { node = new_node, indent = indent, heading_level = h_level })
+                    else
+                        if h_level > 0 then
+                            -- Heading mode: find closest ancestor with smaller heading level
+                            while #stack > 1 and stack[#stack].heading_level >= h_level do
+                                table.remove(stack)
+                            end
+                            local parent = stack[#stack].node
+                            ast.add_child(parent, new_node)
+                            table.insert(stack, { node = new_node, indent = indent, heading_level = h_level })
+                        else
+                            -- Indented / bullet mode
+                            if #stack == 1 then
+                                -- Only root on stack; new node must be a child of root
+                                local parent = stack[1].node
+                                ast.add_child(parent, new_node)
+                                table.insert(stack, { node = new_node, indent = indent, heading_level = 0 })
+                            else
+                                local top_indent = stack[#stack].indent
+                                if indent > top_indent then
+                                    -- Indented deeper: child of the current top node
+                                    local parent = stack[#stack].node
+                                    ast.add_child(parent, new_node)
+                                    table.insert(stack, { node = new_node, indent = indent, heading_level = 0 })
+                                elseif indent == top_indent then
+                                    -- Same indent: sibling of current top node
+                                    table.remove(stack)
+                                    local parent = stack[#stack].node
+                                    ast.add_child(parent, new_node)
+                                    table.insert(stack, { node = new_node, indent = indent, heading_level = 0 })
+                                else
+                                    -- Dedented: pop until stack node has indent < current indent
+                                    while #stack > 1 and stack[#stack].indent > indent do
+                                        table.remove(stack)
+                                    end
+                                    if #stack > 1 and stack[#stack].indent == indent then
+                                        table.remove(stack)
+                                    end
+                                    local parent = stack[#stack].node
+                                    ast.add_child(parent, new_node)
+                                    table.insert(stack, { node = new_node, indent = indent, heading_level = 0 })
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    process_overlays(raw_summaries, raw_rels)
 
     return root
 end

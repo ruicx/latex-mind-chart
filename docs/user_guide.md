@@ -92,20 +92,72 @@ Branch theme colors automatically propagate to all subtopics:
 
 ## 3. Node Syntax & Formatting
 
-### 3.1 Inline LaTeX & Math Formulas
-Any standard LaTeX commands or math formulas can be embedded in node labels:
+### 3.1 Authoring Syntax Modes
+
+`mindchart` supports two authoring syntaxes with automatic format detection:
+
+#### Mode A: Markdown Indented List Syntax (Recommended)
+Author topics rapidly using standard Markdown headings (`#`) and indented bullet points (`-`, `*`, `+`, `1.`):
 
 ```latex
-[Machine Learning
-  [Supervised
-    [Linear Model $\hat{y} = Wx + b$]
-    [Complex Formula $\int_0^1 f(x)\,dx$]
-  ]
-  [Formatting: \textbf{Bold}, \textit{Italic}, \texttt{Code}]
-]
+\begin{mindchart}[layout=right, theme=rainbow]
+# Deep Learning Architecture
+  - Data Pipeline
+    - Tokenization \& Cleaning
+    - Feature Scaling: $x' = \frac{x - \mu}{\sigma}$
+  - Representation Learning, name=rep
+    - Convolutional Backbone, name=cnn
+    - Attention Transformer, name=tf
+  - Output Classifier, name=out
+    - Logits \& Linear Layer: $\hat{y} = Wx + b$
+    - Softmax Activation
+\summary{cnn}{tf}{Feature Extractors}
+\rel[bend=30]{rep}{out}{Representation Flow}
+\end{mindchart}
 ```
 
-### 3.2 Node Naming & Per-Node Options
+You can also use pure Markdown headings (`#`, `##`, `###`):
+```latex
+\begin{mindchart}[theme=business]
+# Project
+## Phase 1
+### Task 1.1
+### Task 1.2
+## Phase 2
+### Task 2.1
+\end{mindchart}
+```
+
+#### Mode B: Bracket Notation
+Classic nested bracket format:
+
+```latex
+\begin{mindchart}[layout=right]
+[Deep Learning Architecture
+  [Representation Learning, name=rep
+    [Convolutional Backbone, name=cnn]
+    [Attention Transformer, name=tf]
+  ]
+  [Output Classifier, name=out]
+]
+\summary{cnn}{tf}{Feature Extractors}
+\end{mindchart}
+```
+
+> **Auto-Detection**: If the first non-blank character is `[`, bracket mode is chosen; otherwise, markdown mode is chosen. You can also explicitly enforce mode via `syntax=markdown` or `syntax=bracket`.
+
+### 3.2 Inline LaTeX & Math Formulas
+Any standard LaTeX commands or math formulas can be embedded in node labels in both syntaxes:
+
+```latex
+# Machine Learning
+  - Supervised Learning
+    - Linear Model: $\hat{y} = Wx + b$
+    - Complex Integral: $\int_0^1 f(x)\,dx$
+  - Formatting: \textbf{Bold}, \textit{Italic}, \texttt{Code}
+```
+
+### 3.3 Node Naming & Per-Node Options
 Nodes can be assigned options using `key=value` after a comma:
 
 - `name=<id>` or `id=<id>`: Assigns a unique name for overlay referencing.
@@ -113,9 +165,9 @@ Nodes can be assigned options using `key=value` after a comma:
 - `side=left` or `side=right`: Forces a Level 1 branch to a specific side in a `balanced` map.
 
 ```latex
-[Parent
-  [Special Branch, name=sp_branch, color=E74C3C]
-]
+# Architecture
+  - Client Layer, name=client, color=3498DB, side=left
+  - Backend Services, name=server, color=2ECC71, side=right
 ```
 
 ---
