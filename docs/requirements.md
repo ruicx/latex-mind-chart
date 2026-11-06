@@ -146,6 +146,10 @@ The package provides two authoring syntaxes with automatic format detection:
 
 ### 3.4 Future Roadmap (Post-MVP)
 
-1. **Tapered Stroke Ribbon Paths**: True variable-width brush ribbon connectors.
-2. **Boundaries**: Highlight boxes/halos enclosing specific subtrees.
-3. **Tags & Badges**: Micro-labels, numbering badges, and callout markers alongside node text.
+For complete technical specifications, mathematical foundations, and implementation milestones, refer to the dedicated [Development Roadmap](file:///D:/work/tex/mind_chart/docs/roadmap.md):
+
+1. **Subtree Boundaries (`\boundary`)**: Soft colored rounded boxes and badges enclosing entire subtrees.
+2. **Tapered Ribbon Connectors (`line=tapered`)**: Variable-width organic Bézier brush ribbon paths.
+3. **Long Text Auto-Wrap & Multi-Line Support (`max_width=...`)**: Dynamic TeX box wrapping and newline support.
+4. **Tags & Badges (`tag=...`, `badge=...`)**: Metadata chips, priority markers, and numbering markers.
+5. **Automation & CI**: GitHub Actions multi-platform workflow and TDS packaging for CTAN.
