@@ -1,5 +1,46 @@
+# TeX auxiliary and log files
 *.aux
 *.log
+*.toc
+*.lot
+*.lof
+*.out
+*.nav
+*.snm
+*.vrb
 *.fls
 *.fdb_latexmk
 *.synctex.gz
+*.synctex(busy)
+
+# Biber / BibTeX
+*.bbl
+*.bcf
+*.blg
+*.run.xml
+
+# MakeIndex / Glossaries
+*.glo
+*.gls
+*.idx
+*.ilg
+*.ind
+*.ist
+
+# OS & Editor specific files
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+
+# Ephemeral test artifacts
+test/*_preview_fixed*
+test/check_crop.png
+test/crop_rel.png
+test/test_box.*
+test/test_scale.*
+test/test_rel_anchors.*
