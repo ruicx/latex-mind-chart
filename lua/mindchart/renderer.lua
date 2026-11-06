@@ -70,7 +70,7 @@ function renderer.render(root, options)
     local scale = options.scale or "1"
 
     tex.print(string.format(
-        "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.append style={transform shape}, every node/.style={outer sep=0pt}]",
+        "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.style={transform shape, outer sep=0pt}]",
         scale
     ))
 
