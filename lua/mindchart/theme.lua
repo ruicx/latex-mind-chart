@@ -109,6 +109,17 @@ function theme.apply(root, options)
         s.node.color = s.options.color or base_color
         s.node.style = s.options.style or "card"
     end
+
+    -- Style boundary nodes
+    for _, b in ipairs(ast.boundaries) do
+        local from_node = ast.named_nodes[b.from]
+        local base_color = (from_node and from_node.color) or root_color
+        b.color = b.options.color or base_color
+        if b.node then
+            b.node.color = b.color
+            b.node.style = "badge"
+        end
+    end
 end
 
 --- Converts a hex string like "#E74C3C" or "E74C3C" to RGB values (0-255).

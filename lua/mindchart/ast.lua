@@ -9,6 +9,7 @@ local node_id_counter = 0
 ast.named_nodes = {}
 ast.summaries = {}
 ast.relationships = {}
+ast.boundaries = {}
 
 --- Creates a new AST Node.
 --- @param text string The raw text/content of the node.
@@ -55,6 +56,7 @@ function ast.reset_counter()
     ast.named_nodes = {}
     ast.summaries = {}
     ast.relationships = {}
+    ast.boundaries = {}
 end
 
 --- Adds a child node to a parent node, setting depth and parent reference.

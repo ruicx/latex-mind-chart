@@ -211,3 +211,35 @@ Draws a curved, dashed arrow with an annotation badge connecting any two nodes:
 - `side=<placement>`: Placement relative to line (`above`, `below`, `auto`, `sloped`).
 - `from_anchor=<anchor>`, `to_anchor=<anchor>`: Specific node docking points (`north`, `south`, `east`, `west`). Defaults to automatic boundary clipping.
 - `fill=<color|none>`: Background fill for label badge (default: `white`, set `none` for transparent).
+
+### 4.3 Subtree Boundaries (`\boundary`)
+Encloses a specific topic subtree (or a range of sibling subtrees) within a soft, colored rounded background or dashed border, crowned with a customizable title badge:
+
+```latex
+% Enclose an entire subtree starting at a node
+\boundary[options]{target_node}{Title Badge}
+
+% Or enclose a range of sibling subtrees
+\boundary[options]{from_node}{to_node}{Title Badge}
+```
+
+```latex
+\begin{mindchart}
+# Deep Learning System
+  - Representation Learning, name=rep
+    - Convolutional Backbone, name=cnn
+    - Attention Transformer, name=tf
+\boundary[color=E74C3C, style=dashed]{rep}{Representation Backbone}
+\end{mindchart}
+```
+
+#### Boundary Options:
+- `color=<hex|name>`: Border and title badge color (automatically inherits from the target subtree's theme color if omitted).
+- `style=<dashed|solid|dotted>`: Border stroke style (default: `dashed`).
+- `fill=<color|none>`: Background fill color (defaults to a soft 8% tint of the branch color; set `none` for transparent background).
+- `fill_opacity=<factor>`: Background fill opacity (e.g. `0.08`, `0.15`).
+- `pad=<pt>`: Outer padding around the enclosed subtree bounding box (default: `5.0`).
+- `rounded=<pt>`: Corner radius of the boundary box (default: `4.0`).
+- `line_width=<pt>`: Border stroke width (default: `0.8`).
+- `title_style=<pill|card>`: Title badge visual style (`pill` for solid colored pill with white text; `card` for white card with colored border and text; default: `pill`).
+- `title_pos=<top_left|top_center|top_right|bottom_left>`: Placement of the title badge on the boundary frame (default: `top_left`).

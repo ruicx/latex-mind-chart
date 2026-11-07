@@ -110,4 +110,67 @@ assert_eq(root3.children[2].children[2].text, "Task 2.2", "Task 2.2 text")
 
 print("Test 3 passed successfully!")
 
+-- Test 4: Subtree Boundaries (\boundary) in Markdown and Bracket notations
+local md_input4 = [[
+# System Architecture
+  - Data Pipeline, name=data
+    - Cleaning
+    - Normalization
+  - Core Engine, name=engine
+    - Feature Transformer, name=ft
+    - Model Backbone, name=bb
+  - Evaluation, name=eval
+\boundary[color=blue, style=dashed]{engine}{Deep Neural Core}
+\boundary[color=E74C3C]{ft}{bb}{Transformer Subsystem}
+\boundary[color=27AE60]{eval}
+]]
+
+local root4 = parser.parse_markdown(md_input4)
+assert_eq(root4.text, "System Architecture", "Root 4 text")
+assert_eq(#ast.boundaries, 3, "Boundaries count")
+
+-- Boundary 1: single node with title
+local bnd1 = ast.boundaries[1]
+assert_eq(bnd1.from, "engine", "bnd1 from")
+assert_eq(bnd1.to, "engine", "bnd1 to")
+assert_eq(bnd1.title, "Deep Neural Core", "bnd1 title")
+assert_eq(bnd1.options.color, "blue", "bnd1 color")
+assert_eq(bnd1.options.style, "dashed", "bnd1 style")
+assert(bnd1.node ~= nil, "bnd1.node should exist")
+assert_eq(bnd1.node.text, "Deep Neural Core", "bnd1.node text")
+assert_eq(bnd1.node.style, "badge", "bnd1.node style")
+
+-- Boundary 2: range with title
+local bnd2 = ast.boundaries[2]
+assert_eq(bnd2.from, "ft", "bnd2 from")
+assert_eq(bnd2.to, "bb", "bnd2 to")
+assert_eq(bnd2.title, "Transformer Subsystem", "bnd2 title")
+assert_eq(bnd2.options.color, "E74C3C", "bnd2 color")
+assert(bnd2.node ~= nil, "bnd2.node should exist")
+assert_eq(bnd2.node.text, "Transformer Subsystem", "bnd2.node text")
+
+-- Boundary 3: single node without title
+local bnd3 = ast.boundaries[3]
+assert_eq(bnd3.from, "eval", "bnd3 from")
+assert_eq(bnd3.to, "eval", "bnd3 to")
+assert_eq(bnd3.title, "", "bnd3 title should be empty")
+assert_eq(bnd3.options.color, "27AE60", "bnd3 color")
+assert(bnd3.node == nil, "bnd3.node should be nil when title is empty")
+
+-- Bracket notation test with \boundary
+local bracket_input = [[
+[Root
+  [SubA, name=sa
+    [LeafA1]
+  ]
+]
+\boundary[color=red]{sa}{Subsystem A}
+]]
+local root_b = parser.parse_bracket(bracket_input)
+assert_eq(#ast.boundaries, 1, "Bracket boundary count")
+assert_eq(ast.boundaries[1].from, "sa", "Bracket boundary from")
+assert_eq(ast.boundaries[1].title, "Subsystem A", "Bracket boundary title")
+
+print("Test 4 passed successfully!")
+
 print("ALL PARSER UNIT TESTS PASSED!")

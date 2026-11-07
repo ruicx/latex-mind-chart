@@ -28,6 +28,8 @@ local function compute_node_box(node, cfg)
         px, py = cfg.pad_x_capsule, cfg.pad_y_capsule
     elseif node.style == "card" or node.style == "boxed" then
         px, py = cfg.pad_x_card, cfg.pad_y_card
+    elseif node.style == "badge" then
+        px, py = 5.0, 3.0
     end
 
     node.pad_x = px
@@ -312,6 +314,105 @@ local function position_summaries(cfg)
     end
 end
 
+--- Positions boundary boxes and boundary title badges.
+local function position_boundaries(cfg)
+    for _, b in ipairs(ast.boundaries) do
+        local from_node = ast.named_nodes[b.from]
+        local to_node = ast.named_nodes[b.to] or from_node
+        if from_node then
+            local nodes_in_range = {}
+            if from_node == to_node then
+                table.insert(nodes_in_range, from_node)
+            elseif from_node.parent and from_node.parent == to_node.parent then
+                local p = from_node.parent
+                local idx_from, idx_to
+                for i, c in ipairs(p.children) do
+                    if c == from_node then idx_from = i end
+                    if c == to_node then idx_to = i end
+                end
+                if idx_from and idx_to then
+                    local s_idx = math.min(idx_from, idx_to)
+                    local e_idx = math.max(idx_from, idx_to)
+                    for i = s_idx, e_idx do
+                        table.insert(nodes_in_range, p.children[i])
+                    end
+                else
+                    table.insert(nodes_in_range, from_node)
+                    table.insert(nodes_in_range, to_node)
+                end
+            else
+                table.insert(nodes_in_range, from_node)
+                table.insert(nodes_in_range, to_node)
+            end
+
+            -- Collect all descendants of the nodes in range
+            local all_nodes = {}
+            for _, n in ipairs(nodes_in_range) do
+                collect_subtree_nodes(n, all_nodes)
+            end
+
+            local y_top = -math.huge
+            local y_bot = math.huge
+            local x_max = -math.huge
+            local x_min = math.huge
+
+            for _, n in ipairs(all_nodes) do
+                if not n.box_height then
+                    compute_node_box(n, cfg)
+                end
+                local nt = n.y + (n.box_height / 2.0)
+                local nb = n.y - (n.box_height / 2.0)
+                local nr = n.x + n.box_width
+                local nl = n.x
+
+                if nt > y_top then y_top = nt end
+                if nb < y_bot then y_bot = nb end
+                if nr > x_max then x_max = nr end
+                if nl < x_min then x_min = nl end
+            end
+
+            local pad = tonumber(b.options.pad) or 5.0
+            x_min = x_min - pad
+            x_max = x_max + pad
+            local y_min_box = y_bot - pad
+            local y_max_box = y_top + pad
+
+            b.box = {
+                x_min = x_min,
+                x_max = x_max,
+                y_min = y_min_box,
+                y_max = y_max_box,
+                pad = pad,
+            }
+
+            -- Position title badge if present
+            if b.node and b.node.text ~= "" then
+                compute_node_box(b.node, cfg)
+                local pos_opt = b.options.title_pos or "top_left"
+                local badge_y = y_max_box
+                local badge_x = x_min + 8.0
+
+                if pos_opt == "top_left" then
+                    badge_x = x_min + 8.0
+                    badge_y = y_max_box
+                elseif pos_opt == "top_center" then
+                    badge_x = ((x_min + x_max) / 2.0) - (b.node.box_width / 2.0)
+                    badge_y = y_max_box
+                elseif pos_opt == "top_right" then
+                    badge_x = x_max - 8.0 - b.node.box_width
+                    badge_y = y_max_box
+                elseif pos_opt == "bottom_left" then
+                    badge_x = x_min + 8.0
+                    badge_y = y_min_box
+                end
+
+                b.node.x = badge_x
+                b.node.y = badge_y
+            end
+        end
+    end
+end
+
 --- Main layout entry point.
 --- @param root table
 --- @param options table
@@ -335,6 +436,9 @@ function layout.compute(root, options)
 
     -- Position any summary brackets
     position_summaries(cfg)
+
+    -- Position any subtree boundaries
+    position_boundaries(cfg)
 end
 
 return layout

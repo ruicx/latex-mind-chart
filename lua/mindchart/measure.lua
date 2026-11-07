@@ -25,6 +25,13 @@ function measure.init(root)
             node_map[s.node.id] = s.node
         end
     end
+
+    -- Also index boundary badge nodes
+    for _, b in ipairs(ast.boundaries) do
+        if b.node then
+            node_map[b.node.id] = b.node
+        end
+    end
 end
 
 --- Emits TeX measurement commands into the input stream.
@@ -39,6 +46,13 @@ function measure.emit_measurement_commands()
     for _, s in ipairs(ast.summaries) do
         if s.node and s.node.text ~= "" then
             tex.print(string.format("\\mindchartMeasureItem{%d}{%s}", s.node.id, s.node.text))
+        end
+    end
+
+    -- Measure boundary badge nodes
+    for _, b in ipairs(ast.boundaries) do
+        if b.node and b.node.text ~= "" then
+            tex.print(string.format("\\mindchartMeasureItem{%d}{{\\scriptsize\\bfseries %s}}", b.node.id, b.node.text))
         end
     end
 

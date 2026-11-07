@@ -177,26 +177,33 @@ local function parse_command_invocations(input)
         return nil, start_pos
     end
 
-    -- Scan for \summary and \rel
+    -- Scan for \summary, \rel, and \boundary
+    local summaries = {}
+    local relationships = {}
+    local boundaries = {}
+
     local pos = 1
     local len = #input
     while pos <= len do
         local s_sum, e_sum = input:find("\\summary", pos, true)
         local s_rel, e_rel = input:find("\\rel", pos, true)
+        local s_bnd, e_bnd = input:find("\\boundary", pos, true)
 
         local next_cmd = nil
         local cmd_type = nil
         local cmd_end = nil
 
-        if s_sum and (not s_rel or s_sum < s_rel) then
-            next_cmd = s_sum
-            cmd_type = "summary"
-            cmd_end = e_sum
-        elseif s_rel then
-            next_cmd = s_rel
-            cmd_type = "rel"
-            cmd_end = e_rel
+        local function check(s, e, t)
+            if s and (not next_cmd or s < next_cmd) then
+                next_cmd = s
+                cmd_type = t
+                cmd_end = e
+            end
         end
+
+        check(s_sum, e_sum, "summary")
+        check(s_rel, e_rel, "rel")
+        check(s_bnd, e_bnd, "boundary")
 
         if not next_cmd then break end
 
@@ -209,29 +216,71 @@ local function parse_command_invocations(input)
         local arg2, p2 = extract_arg(input, p1)
         local arg3, p3 = extract_arg(input, p2)
 
-        if arg1 and arg2 then
-            if cmd_type == "summary" then
-                table.insert(summaries, {
-                    from = trim(arg1),
-                    to = trim(arg2),
-                    text = trim(arg3 or ""),
+        if cmd_type == "boundary" then
+            if arg1 then
+                local b_from, b_to, b_title, next_cur
+                if arg3 then
+                    b_from = trim(arg1)
+                    b_to = trim(arg2)
+                    b_title = trim(arg3)
+                    next_cur = p3
+                elseif arg2 then
+                    if opts.to then
+                        b_from = trim(arg1)
+                        b_to = trim(opts.to)
+                        b_title = trim(arg2)
+                    else
+                        b_from = trim(arg1)
+                        b_to = trim(arg1)
+                        b_title = trim(arg2)
+                    end
+                    next_cur = p2
+                else
+                    b_from = trim(arg1)
+                    b_to = trim(opts.to or arg1)
+                    b_title = trim(opts.title or "")
+                    next_cur = p1
+                end
+
+                if opts.title and b_title == "" then
+                    b_title = trim(opts.title)
+                end
+
+                table.insert(boundaries, {
+                    from = b_from,
+                    to = b_to,
+                    title = b_title,
                     options = opts,
                 })
-            elseif cmd_type == "rel" then
-                table.insert(relationships, {
-                    from = trim(arg1),
-                    to = trim(arg2),
-                    text = trim(arg3 or ""),
-                    options = opts,
-                })
+                pos = next_cur
+            else
+                pos = cmd_end + 1
             end
-            pos = p3
         else
-            pos = cmd_end + 1
+            if arg1 and arg2 then
+                if cmd_type == "summary" then
+                    table.insert(summaries, {
+                        from = trim(arg1),
+                        to = trim(arg2),
+                        text = trim(arg3 or ""),
+                        options = opts,
+                    })
+                elseif cmd_type == "rel" then
+                    table.insert(relationships, {
+                        from = trim(arg1),
+                        to = trim(arg2),
+                        text = trim(arg3 or ""),
+                        options = opts,
+                    })
+                end
+                pos = p3 or p2
+            else
+                pos = cmd_end + 1
+            end
         end
     end
 
-    return summaries, relationships
+    return summaries, relationships, boundaries
 end
 
 --- Parses bracket notation string into an AST tree.
@@ -244,8 +293,8 @@ function parser.parse_bracket(input)
 
     ast.reset_counter()
 
-    -- Extract summaries and relationships first
-    local raw_summaries, raw_rels = parse_command_invocations(input)
+    -- Extract summaries, relationships, and boundaries first
+    local raw_summaries, raw_rels, raw_boundaries = parse_command_invocations(input)
 
     local stack = {}
     local root = nil
@@ -337,8 +386,8 @@ function parser.parse_bracket(input)
         i = i + 1
     end
 
-    -- Process summaries and relationships
-    local function process_overlays(summaries, rels)
+    -- Process summaries, relationships, and boundaries
+    local function process_overlays(summaries, rels, boundaries)
         for _, s in ipairs(summaries) do
             local s_node = ast.new_node(s.text, s.options)
             s_node.is_summary = true
@@ -350,9 +399,21 @@ function parser.parse_bracket(input)
         for _, r in ipairs(rels) do
             table.insert(ast.relationships, r)
         end
+
+        if boundaries then
+            for _, b in ipairs(boundaries) do
+                if b.title and b.title ~= "" then
+                    local b_node = ast.new_node(b.title, b.options)
+                    b_node.is_boundary = true
+                    b_node.style = "badge"
+                    b.node = b_node
+                end
+                table.insert(ast.boundaries, b)
+            end
+        end
     end
 
-    process_overlays(raw_summaries, raw_rels)
+    process_overlays(raw_summaries, raw_rels, raw_boundaries)
 
     return root
 end
@@ -371,15 +432,15 @@ function parser.parse_markdown(input)
 
     ast.reset_counter()
 
-    -- Extract overlays (\summary and \rel)
-    local raw_summaries, raw_rels = parse_command_invocations(input)
+    -- Extract overlays (\summary, \rel, and \boundary)
+    local raw_summaries, raw_rels, raw_boundaries = parse_command_invocations(input)
 
     local root = nil
     -- Stack items: { node = Node, indent = number, heading_level = number }
     local stack = {}
 
     -- Helper to process overlays
-    local function process_overlays(summaries, rels)
+    local function process_overlays(summaries, rels, boundaries)
         for _, s in ipairs(summaries) do
             local s_node = ast.new_node(s.text, s.options)
             s_node.is_summary = true
@@ -390,6 +451,18 @@ function parser.parse_markdown(input)
 
         for _, r in ipairs(rels) do
             table.insert(ast.relationships, r)
+        end
+
+        if boundaries then
+            for _, b in ipairs(boundaries) do
+                if b.title and b.title ~= "" then
+                    local b_node = ast.new_node(b.title, b.options)
+                    b_node.is_boundary = true
+                    b_node.style = "badge"
+                    b.node = b_node
+                end
+                table.insert(ast.boundaries, b)
+            end
         end
     end
 
@@ -402,7 +475,7 @@ function parser.parse_markdown(input)
             local trimmed = trim(line)
 
             -- Skip TeX comments or overlay command lines (already extracted)
-            if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") then
+            if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") then
                 -- Determine if line is a markdown heading (#...) or bullet list item
                 local hashes, h_content = trimmed:match("^(#+)%s*(.*)$")
                 local h_level = hashes and #hashes or 0
@@ -485,7 +558,7 @@ function parser.parse_markdown(input)
         end
     end
 
-    process_overlays(raw_summaries, raw_rels)
+    process_overlays(raw_summaries, raw_rels, raw_boundaries)
 
     return root
 end

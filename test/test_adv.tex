@@ -63,9 +63,42 @@
 ]
 \summary{dev_fe}{dev_be}{Core Developers}
 \summary{pm}{design}{Product Strategy}
+\boundary[color=1B4F72, style=dashed]{pm}{design}{Product Strategy Org}
 \rel[color=E67E22, bend=25]{design}{dev_fe}{Design Handoff}
 \rel[color=16A085, bend=-25]{dev_ops}{time_mvp}{Continuous Delivery}
 \end{mindchart}
 \end{center}
+
+\newpage
+
+\section*{Subtree Boundaries (\texttt{\textbackslash boundary})}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic, scale=0.85, sibling_sep=18]
+[Deep Learning Framework
+  [Data Ingestion, name=data
+    [Dataset Loaders]
+    [Data Augmentation]
+  ]
+  [Neural Architecture, name=arch
+    [Backbone Network, name=bb
+      [ResNet Layer]
+      [Feature Pyramid]
+    ]
+    [Attention Blocks, name=attn
+      [Self-Attention]
+      [Cross-Attention]
+    ]
+  ]
+  [Loss \& Optimization, name=opt
+    [Cross Entropy Loss]
+    [AdamW Optimizer]
+  ]
+]
+\boundary[color=E74C3C, style=dashed]{arch}{Deep Model Core}
+\boundary[color=2980B9, style=dotted]{data}{Preprocessing Pipeline}
+\boundary[color=27AE60, style=solid, title_style=card]{opt}{Training Engine}
+\summary{bb}{attn}{Feature Processing}
+\rel[color=E67E22, bend=-20]{data}{bb}{Batch Tensors}
+\end{mindchart}
 
 \end{document}

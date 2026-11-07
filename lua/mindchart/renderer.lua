@@ -60,6 +60,83 @@ local function render_node(node)
     end
 end
 
+--- Generates TikZ statements for a subtree boundary box (background).
+--- @param b table
+--- @return string
+local function render_boundary_box(b)
+    local box = b.box
+    if not box then return "" end
+
+    local col_tikz = to_tikz_color(b.color or "#2C3E50")
+    local rounded = tonumber(b.options.rounded) or 4.0
+    local line_w = tonumber(b.options.line_width) or 0.8
+    local style = b.options.style or "dashed"
+
+    local style_str = "dashed"
+    if style == "solid" then
+        style_str = "solid"
+    elseif style == "dotted" then
+        style_str = "dotted"
+    end
+
+    -- Fill color calculation
+    local fill_str = ""
+    if b.options.fill == "none" then
+        fill_str = ""
+    elseif b.options.fill then
+        fill_str = string.format(", fill=%s", to_tikz_color(b.options.fill))
+    else
+        -- Default: soft 8% tint of b.color on white
+        local raw_col = b.color or "#2C3E50"
+        local clean = raw_col:gsub("#", "")
+        if #clean == 6 and clean:match("^%x+$") then
+            local r, g, b_val = theme.hex_to_rgb(clean)
+            local rt = math.floor(255 - (255 - r) * 0.08 + 0.5)
+            local gt = math.floor(255 - (255 - g) * 0.08 + 0.5)
+            local bt = math.floor(255 - (255 - b_val) * 0.08 + 0.5)
+            fill_str = string.format(", fill={rgb,255:red,%d;green,%d;blue,%d}", rt, gt, bt)
+        else
+            fill_str = string.format(", fill=%s!8", raw_col)
+        end
+    end
+
+    local opacity_str = ""
+    if b.options.fill_opacity then
+        opacity_str = string.format(", fill opacity=%s", b.options.fill_opacity)
+    end
+
+    return string.format(
+        "\\draw [draw=%s, %s, line width=%.2fpt, rounded corners=%.2fpt%s%s] (%.2fpt, %.2fpt) rectangle (%.2fpt, %.2fpt);",
+        col_tikz, style_str, line_w, rounded, fill_str, opacity_str,
+        box.x_min, box.y_min, box.x_max, box.y_max
+    )
+end
+
+--- Generates TikZ statements for a subtree boundary title badge.
+--- @param b table
+--- @return string
+local function render_boundary_badge(b)
+    if not b.node or b.node.text == "" then return "" end
+
+    local col_tikz = to_tikz_color(b.color or "#2C3E50")
+    local cx = b.node.x + (b.node.box_width / 2.0)
+    local cy = b.node.y
+    local badge_style = b.options.title_style or "pill"
+
+    if badge_style == "card" or badge_style == "white" then
+        return string.format(
+            "\\node (mc_boundary_badge_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text=%s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\scriptsize\\bfseries %s};",
+            b.node.id, col_tikz, col_tikz, b.node.box_width, b.node.box_height, cx, cy, b.node.text
+        )
+    else
+        -- Solid pill (default)
+        return string.format(
+            "\\node (mc_boundary_badge_%d) [fill=%s, rounded corners=3pt, text=white, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\scriptsize\\bfseries %s};",
+            b.node.id, col_tikz, b.node.box_width, b.node.box_height, cx, cy, b.node.text
+        )
+    end
+end
+
 --- Emits the full TikZ picture to TeX.
 --- @param root table The AST root node.
 --- @param options table Global options.
@@ -73,6 +150,22 @@ function renderer.render(root, options)
         "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.style={transform shape, outer sep=0pt}]",
         scale
     ))
+
+    -- Pass 0a: Draw all subtree boundary background boxes
+    for _, b in ipairs(ast.boundaries) do
+        local box_cmd = render_boundary_box(b)
+        if box_cmd ~= "" then
+            tex.print(box_cmd)
+        end
+    end
+
+    -- Pass 0b: Draw all subtree boundary title badges
+    for _, b in ipairs(ast.boundaries) do
+        local badge_cmd = render_boundary_badge(b)
+        if badge_cmd ~= "" then
+            tex.print(badge_cmd)
+        end
+    end
 
     -- Pass 1: Draw all connection curves
     ast.traverse_preorder(root, function(node, parent)

@@ -27,6 +27,8 @@
 % Overlay markers for syntax completion inside environment
 \NewDocumentCommand{\summary}{ O{} m m m }{}
 \NewDocumentCommand{\rel}{ O{} m m m }{}
+\let\boundary\undefined
+\NewDocumentCommand{\boundary}{ O{} m m m }{}
 
 \newenvironment{mindchart}[1][]{%
     \directlua{mindchart.start_env([==[#1]==])}%
