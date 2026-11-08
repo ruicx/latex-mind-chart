@@ -58,6 +58,7 @@ local function parse_options(opt_str)
     end
     return opts
 end
+parser.parse_options = parse_options
 
 --- Separates node declaration into text and options.
 --- E.g., "Central Topic, color=red, side=left" -> text: "Central Topic", options: {color="red", side="left"}

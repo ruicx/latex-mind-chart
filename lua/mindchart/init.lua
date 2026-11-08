@@ -20,20 +20,7 @@ local env_options_str = ""
 
 --- Parses raw key-value string from LaTeX into a Lua table.
 local function parse_options_string(str)
-    local opts = {}
-    if not str or str == "" then return opts end
-    for item in str:gmatch("[^,]+") do
-        local k, v = item:match("^%s*([%w%-_]+)%s*=%s*(.-)%s*$")
-        if k and v then
-            opts[k] = v
-        else
-            local flag = item:match("^%s*([%w%-_]+)%s*$")
-            if flag and flag ~= "" then
-                opts[flag] = true
-            end
-        end
-    end
-    return opts
+    return parser.parse_options(str)
 end
 
 --- Detects syntax mode: "bracket" or "markdown".
@@ -122,5 +109,8 @@ function mindchart.render()
     -- Render TikZ commands
     renderer.render(current_ast, current_options)
 end
+
+--- Registers a user-defined theme palette.
+mindchart.define_theme = theme.define_theme
 
 return mindchart

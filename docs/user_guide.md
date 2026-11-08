@@ -82,6 +82,40 @@ Branch theme colors automatically propagate to all subtopics:
 | `business` | Professional corporate palette (Navy, Slate, Teal, Bronze, Indigo). |
 | `forest` | Calming natural green palette (Dark Green, Mint, Sage, Olive). |
 | `monochrome` | High-contrast grayscale and black lines, optimized for academic journals. |
+| `nord` | Crisp Arctic polar palette (Polar Night root, Frost Blue, Ice Blue, Glacier, Aurora Green). |
+| `morandi` | Elegant, low-saturation muted pastel palette (Muted Sage, Rose, Dusty Blue, Khaki, Umber). |
+| `dracula` | High-contrast dark-aesthetic tech palette (Dracula Dark root, Purple, Pink, Green, Cyan, Orange). |
+| `ocean` | Deep maritime gradient palette (Midnight Navy root, Deep Sea, Pacific, Cerulean, Bright Teal). |
+| `sunset` / `warm` | Warm dusk gradient palette (Deep Wine root, Crimson, Amber, Gold, Fiery Coral, Terracotta). |
+| `solarized` | Precision Solarized palette (Base02 root, Blue, Cyan, Green, Yellow, Orange, Red, Magenta). |
+
+#### 2.4.1 Custom Theme Registration (`\mindchartDefineTheme`)
+You can register custom organizational or brand color themes globally in LaTeX:
+
+```latex
+\mindchartDefineTheme{mybrand}{
+  root = 1A365D,
+  palette = {2B6CB0, 319795, 38A169, D69E2E, E53E3E, 805AD5}
+}
+
+\begin{mindchart}[theme=mybrand]
+...
+\end{mindchart}
+```
+
+Or using a simple comma-separated list of colors:
+```latex
+\mindchartDefineTheme{minimal}{#2C3E50, #E74C3C, #3498DB, #2ECC71}
+```
+
+#### 2.4.2 Ad-Hoc Inline Palettes (`palette = {...}`)
+Supply an ad-hoc custom palette directly to a specific `mindchart` environment:
+
+```latex
+\begin{mindchart}[palette={E63946, F77F00, FCBF49, 0077B6}, root_color=2C3E50]
+...
+\end{mindchart}
+```
 
 ### 2.5 Scaling (`scale = <factor>`)
 - Scales the entire mind map proportionally:

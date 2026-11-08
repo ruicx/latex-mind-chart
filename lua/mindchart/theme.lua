@@ -39,15 +39,125 @@ theme.palettes = {
         "#5D6D7E", -- Steel Grey
         "#85929E", -- Medium Grey
         "#34495E", -- Blue Slate
-    }
+    },
+    ["nord"] = {
+        "#5E81AC", -- Frost Blue
+        "#88C0D0", -- Ice Blue
+        "#81A1C1", -- Glacier Blue
+        "#A3BE8C", -- Aurora Green
+        "#D08770", -- Aurora Orange
+        "#B48EAD", -- Aurora Purple
+        "#EBCB8B", -- Aurora Yellow
+        "#BF616A", -- Aurora Red
+    },
+    ["morandi"] = {
+        "#7B8B88", -- Muted Sage
+        "#C49C94", -- Muted Rose
+        "#8E9CAE", -- Dusty Blue
+        "#BCA888", -- Warm Khaki
+        "#96897B", -- Muted Clay
+        "#6C7B7F", -- Dusty Teal
+        "#B08B59", -- Muted Ochre
+        "#8A7968", -- Warm Umber
+    },
+    ["dracula"] = {
+        "#BD93F9", -- Dracula Purple
+        "#FF79C6", -- Dracula Pink
+        "#50FA7B", -- Dracula Green
+        "#8BE9FD", -- Dracula Cyan
+        "#FFB86C", -- Dracula Orange
+        "#F1FA8C", -- Dracula Yellow
+        "#FF5555", -- Dracula Red
+    },
+    ["ocean"] = {
+        "#134074", -- Deep Sea Blue
+        "#0077B6", -- Pacific Blue
+        "#0096C7", -- Cerulean
+        "#00B4D8", -- Bright Teal
+        "#48CAE4", -- Sky Turquoise
+        "#023E8A", -- Cobalt Blue
+    },
+    ["sunset"] = {
+        "#E63946", -- Crimson Red
+        "#F77F00", -- Amber Orange
+        "#FCBF49", -- Warm Gold
+        "#D62828", -- Fiery Coral
+        "#E76F51", -- Terracotta
+        "#9D0208", -- Deep Ruby
+    },
+    ["solarized"] = {
+        "#268BD2", -- Blue
+        "#2AA198", -- Cyan
+        "#859900", -- Green
+        "#B58900", -- Yellow
+        "#CB4B16", -- Orange
+        "#DC322F", -- Red
+        "#D33682", -- Magenta
+        "#6C71C4", -- Violet
+    },
 }
 
+-- Aliases
+theme.palettes["warm"] = theme.palettes["sunset"]
+
 theme.root_colors = {
-    ["rainbow"] = "#2C3E50",
-    ["business"] = "#0E2F44",
-    ["forest"] = "#145A32",
+    ["rainbow"]    = "#2C3E50",
+    ["business"]   = "#0E2F44",
+    ["forest"]     = "#145A32",
     ["monochrome"] = "#1C2833",
+    ["nord"]       = "#2E3440",
+    ["morandi"]    = "#3A3F44",
+    ["dracula"]    = "#282A36",
+    ["ocean"]      = "#0B2545",
+    ["sunset"]     = "#4A1525",
+    ["warm"]       = "#4A1525",
+    ["solarized"]  = "#073642",
 }
+
+--- Registers a new user-defined theme palette.
+--- @param name string Theme identifier
+--- @param spec string|table Either a table { root=..., palette={...} } or a string spec
+function theme.define_theme(name, spec)
+    if not name or name == "" then return end
+    name = tostring(name):match("^%s*(.-)%s*$")
+
+    local root_col = "#2C3E50"
+    local colors = {}
+
+    if type(spec) == "table" then
+        root_col = spec.root or root_col
+        colors = spec.palette or {}
+    elseif type(spec) == "string" then
+        -- Check if spec uses key-value: root=..., palette={...}
+        local root_match = spec:match("root%s*=%s*([^,{}]+)")
+        if root_match then
+            root_col = root_match:match("^%s*(.-)%s*$")
+        end
+
+        local pal_match = spec:match("palette%s*=%s*{(.-)}") or spec:match("palette%s*=%s*([^,}]+)")
+        if pal_match then
+            for col in pal_match:gmatch("[^,]+") do
+                col = col:match("^%s*(.-)%s*$")
+                if col ~= "" then
+                    table.insert(colors, col)
+                end
+            end
+        else
+            -- Plain comma-separated list of colors
+            for col in spec:gmatch("[^,]+") do
+                col = col:match("^%s*(.-)%s*$")
+                if col ~= "" and not col:match("^root%s*=") then
+                    table.insert(colors, col)
+                end
+            end
+        end
+    end
+
+    if #colors > 0 then
+        theme.palettes[name] = colors
+        theme.root_colors[name] = root_col
+    end
+end
 
 --- Resolves and assigns colors and styles across all nodes in the tree.
 --- @param root table The AST root node.
@@ -57,8 +167,34 @@ function theme.apply(root, options)
     local theme_name = options.theme or "rainbow"
     local style_name = options.style or "classic"
 
-    local palette = theme.palettes[theme_name] or theme.palettes["rainbow"]
-    local root_color = theme.root_colors[theme_name] or "#2C3E50"
+    local palette
+    local root_color = "#2C3E50"
+
+    -- Support ad-hoc inline palette in options: palette={#E74C3C, #3498DB} or palette="#E74C3C, #3498DB"
+    if options.palette then
+        local pal_list = {}
+        local raw_pal = tostring(options.palette)
+        raw_pal = raw_pal:match("^{?(.-)}?$") or raw_pal
+        for col in raw_pal:gmatch("[^,]+") do
+            col = col:match("^%s*(.-)%s*$")
+            if col ~= "" then
+                table.insert(pal_list, col)
+            end
+        end
+        if #pal_list > 0 then
+            palette = pal_list
+            root_color = options.root_color or palette[1]
+        end
+    end
+
+    if not palette then
+        palette = theme.palettes[theme_name] or theme.palettes["rainbow"]
+        root_color = theme.root_colors[theme_name] or "#2C3E50"
+    end
+
+    if options.root_color then
+        root_color = options.root_color
+    end
 
     -- Assign root attributes
     root.color = root.options.color or root_color

@@ -159,4 +159,68 @@
     - S3 Compatible Object Store, tag=MinIO, status=TODO
 \end{mindchart}
 
+\newpage
+
+\section*{Expanded Color Themes (\texttt{nord}, \texttt{morandi}, \texttt{ocean}, \texttt{sunset})}
+
+\begin{mindchart}[theme=nord, layout=right, style=classic, line=tapered, scale=0.68]
+# Nordic Architecture (theme=nord)
+  - Core Services
+    - Authentication Engine
+    - Session State Store
+  - Data Processing
+    - Stream Aggregator
+    - Batch ETL Worker
+  - Delivery Gateway
+    - Edge CDN Cache
+    - API Proxy Router
+\end{mindchart}
+
+\vspace{0.8cm}
+
+\begin{mindchart}[theme=morandi, layout=right, style=classic, line=curve, scale=0.68]
+# Editorial Design System (theme=morandi)
+  - Typography
+    - Editorial Serif Display
+    - Neutral Grotesque Body
+  - Color Harmonies
+    - Muted Sage \& Dusty Rose
+    - Warm Umber \& Slate Blue
+  - Layout Geometry
+    - Golden Ratio Grid
+    - Asymmetric Margins
+\end{mindchart}
+
+\vspace{0.8cm}
+
+\section*{Custom User-Defined Theme \& Ad-Hoc Inline Palette}
+
+% Register a custom corporate brand theme
+\mindchartDefineTheme{brandtheme}{
+  root = 1A365D,
+  palette = {2B6CB0, 319795, 38A169, D69E2E, E53E3E, 805AD5}
+}
+
+\begin{mindchart}[theme=brandtheme, layout=right, style=classic, line=tapered, scale=0.68]
+# Enterprise Platform (\textbackslash mindchartDefineTheme)
+  - Cloud Infrastructure
+    - Multi-Region VPC
+    - Kubernetes Mesh
+  - Financial Ledger
+    - Double-Entry Auditing
+    - Vector Settlement Engine
+\end{mindchart}
+
+\vspace{0.8cm}
+
+\begin{mindchart}[palette={E63946, F77F00, FCBF49, 0077B6}, layout=right, style=boxed, line=elbow, scale=0.68]
+# Ad-Hoc Inline Palette (palette=\{...\})
+  - Signal Ingestion
+    - Telemetry Sensors
+  - Real-Time Analytics
+    - Sliding Window Aggregates
+  - Action Dispatcher
+    - Automated Webhook Trigger
+\end{mindchart}
+
 \end{document}

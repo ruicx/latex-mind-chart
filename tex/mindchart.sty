@@ -58,6 +58,11 @@
     \directlua{mindchart.render()}%
 }
 
+% User custom theme registration
+\NewDocumentCommand{\mindchartDefineTheme}{ m m }{%
+    \directlua{mindchart.define_theme([==[#1]==], [==[#2]==])}%
+}
+
 % Overlay markers for syntax completion inside environment
 \NewDocumentCommand{\summary}{ O{} m m m }{}
 \NewDocumentCommand{\rel}{ O{} m m m }{}
