@@ -69,7 +69,7 @@ function mindchart.start_env(opt_str)
             return "\\end{mindchart}" .. suffix
         end
         table.insert(env_buffer_lines, line)
-        return ""
+        return "%"
     end, "mindchart_buffer")
 end
 
@@ -97,15 +97,16 @@ function mindchart.prepare(raw_input, opt_str)
         return
     end
 
-    measure.init(current_ast)
-    measure.emit_measurement_commands()
+    measure.init(current_ast, current_options)
+    measure.emit_measurement_commands(current_options)
 end
 
 --- Step 2: Stores measured dimensions from TeX box.
 --- @param id number
 --- @param box_num number
-function mindchart.store_dim(id, box_num)
-    measure.store_dim(id, box_num)
+--- @param is_multiline boolean|nil
+function mindchart.store_dim(id, box_num, is_multiline)
+    measure.store_dim(id, box_num, is_multiline)
 end
 
 --- Step 3: Executes layout algorithms and renders TikZ graphic.

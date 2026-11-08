@@ -109,6 +109,10 @@ local function parse_node_declaration(decl)
         text = stripped
     end
 
+    -- Clean up newlines and spaces around explicit '\\'
+    text = text:gsub("[\r\n]+", " ")
+    text = text:gsub("%s*\\\\%s*", "\\\\")
+
     return text, options
 end
 
@@ -466,7 +470,38 @@ function parser.parse_markdown(input)
         end
     end
 
+    -- Pre-process lines to handle trailing '\\' line continuation
+    local raw_lines = {}
     for raw_line in input:gmatch("[^\r\n]+") do
+        table.insert(raw_lines, raw_line)
+    end
+
+    local lines = {}
+    local line_idx = 1
+    while line_idx <= #raw_lines do
+        local cur_line = raw_lines[line_idx]
+        local trimmed = trim(cur_line)
+        if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") then
+            while cur_line:match("\\\\%s*$") and line_idx < #raw_lines do
+                local next_line = raw_lines[line_idx + 1]
+                local next_trimmed = trim(next_line)
+                if next_trimmed == "" or next_trimmed:match("^%%") or next_trimmed:match("^\\summary") or next_trimmed:match("^\\rel") or next_trimmed:match("^\\boundary") then
+                    break
+                end
+                local is_new_bullet = next_trimmed:match("^[%-%*%+]%s+") or next_trimmed:match("^%d+[%.)]%s+") or next_trimmed:match("^#+%s*")
+                if is_new_bullet then
+                    break
+                end
+                local base = cur_line:match("^(.-)%s*\\\\%s*$")
+                cur_line = base .. "\\\\" .. next_trimmed
+                line_idx = line_idx + 1
+            end
+        end
+        table.insert(lines, cur_line)
+        line_idx = line_idx + 1
+    end
+
+    for _, raw_line in ipairs(lines) do
         if raw_line:match("%S") then
             -- Expand tabs to 4 spaces
             local line = raw_line:gsub("\t", "    ")

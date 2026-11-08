@@ -15,9 +15,43 @@
     dofile(f)
 }
 
+\def\mc@str@left{left}
+\def\mc@str@right{right}
+
 \newcommand{\mindchartMeasureItem}[2]{%
     \sbox\mindchart@box{#2}%
-    \directlua{mindchart.store_dim(#1, \the\mindchart@box)}%
+    \directlua{mindchart.store_dim(#1, \the\mindchart@box, false)}%
+}
+
+\newcommand{\mindchartMeasureMulti}[4]{%
+    % #1: node id
+    % #2: max_width (e.g. "4cm" or empty)
+    % #3: align ("left", "center", "right")
+    % #4: text
+    \edef\mc@temp@mw{#2}%
+    \ifx\mc@temp@mw\@empty%
+        \def\mc@temp@al{#3}%
+        \ifx\mc@temp@al\mc@str@left%
+            \sbox\mindchart@box{\begin{tabular}{@{}l@{}}#4\end{tabular}}%
+        \else%
+            \ifx\mc@temp@al\mc@str@right%
+                \sbox\mindchart@box{\begin{tabular}{@{}r@{}}#4\end{tabular}}%
+            \else%
+                \sbox\mindchart@box{\begin{tabular}{@{}c@{}}#4\end{tabular}}%
+            \fi%
+        \fi%
+        \directlua{mindchart.store_dim(#1, \the\mindchart@box, true)}%
+    \else%
+        \sbox\mindchart@box{\parbox{#2}{%
+            \noindent%
+            \def\mc@temp@al{#3}%
+            \ifx\mc@temp@al\mc@str@left\raggedright\else%
+            \ifx\mc@temp@al\mc@str@right\raggedleft\else%
+            \centering\fi\fi%
+            #4\par%
+        }}%
+        \directlua{mindchart.store_dim(#1, \the\mindchart@box, true)}%
+    \fi%
 }
 
 \newcommand{\mindchartFinishMeasure}{%

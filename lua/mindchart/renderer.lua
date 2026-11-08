@@ -25,37 +25,58 @@ end
 
 --- Generates TikZ statements for a single node.
 --- @param node table
+--- @param options table|nil Global options
 --- @return string
-local function render_node(node)
+local function render_node(node, options)
     local cx = node.x + (node.box_width / 2.0)
     local cy = node.y
     local col_tikz = to_tikz_color(node.color or "#2C3E50")
 
+    -- Determine alignment
+    local al = node.options.align or (options and options.align)
+    if not al then
+        if node.style == "underline" then
+            al = (node.side == "left" and "right" or "left")
+        else
+            al = "center"
+        end
+    end
+
+    local is_multi = node.is_multiline or (node.text:find("\\\\") ~= nil) or (node.max_width ~= nil)
+    local extra_opts = ""
+    if is_multi then
+        if node.max_width then
+            extra_opts = string.format(", align=%s, text width=%.2fpt", al, node.width)
+        else
+            extra_opts = string.format(", align=%s", al)
+        end
+    end
+
     if node.style == "capsule" or node.depth == 0 then
         -- Root / Capsule: Solid fill, high contrast white text, bold
         return string.format(
-            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
         )
     elseif node.style == "card" then
         -- Level 1 Card: Rounded box with colored border and white background
         return string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {\\textbf{%s}};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
         )
     elseif node.style == "boxed" then
         -- Boxed: Clean thin border card
         return string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy, node.text
+            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
         )
     else
         -- Underline style: Text sits directly on top of the underline
         local tx = node.x + node.pad_x + (node.width / 2.0)
         local ty = node.y
         return string.format(
-            "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt] at (%.2fpt, %.2fpt) {%s};",
-            node.id, tx, ty, node.text
+            "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
+            node.id, extra_opts, tx, ty, node.text
         )
     end
 end
@@ -181,7 +202,7 @@ function renderer.render(root, options)
 
     -- Pass 2: Draw all node shapes and labels
     ast.traverse_preorder(root, function(node)
-        local node_cmd = render_node(node)
+        local node_cmd = render_node(node, options)
         tex.print(node_cmd)
     end)
 
@@ -191,7 +212,7 @@ function renderer.render(root, options)
             local bracket_cmd = curve.generate_bracket(s.bracket, s.node)
             tex.print(bracket_cmd)
 
-            local s_node_cmd = render_node(s.node)
+            local s_node_cmd = render_node(s.node, options)
             tex.print(s_node_cmd)
         end
     end

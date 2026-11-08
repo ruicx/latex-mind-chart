@@ -135,7 +135,7 @@ function curve.generate_tapered_path(parent, child, line_width)
             "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
             col, end_w, xc, yc, x_end, y_end
         )
-        return ribbon_fill .. "\n" .. underline_draw
+        return ribbon_fill .. " " .. underline_draw
     else
         return ribbon_fill
     end

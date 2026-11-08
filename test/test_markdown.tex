@@ -67,4 +67,43 @@
 ### Dependency Analysis
 \end{mindchart}
 
+\newpage
+
+\subsection*{4. Multi-Line Breaks (\textbackslash\textbackslash) and Auto-Wrapping (max\_width)}
+
+\begin{mindchart}[layout=right, theme=sunset, style=classic, line=tapered, scale=0.78]
+# Distributed Stream\\Processing Engine, color=E74C3C
+  - Data Ingestion\\\& ETL Pipeline, name=ingest, color=E67E22
+    - Apache Kafka Event Log
+    - Schema Validation\\\& Type Checking
+  - Stateful Stream\\Processing, name=proc, color=F1C40F
+    - Exactly-Once Semantics\\with Chandy-Lamport
+    - Windowed Aggregation\\over Tumbling Intervals
+  - Scalable Storage\\\& Analytics, name=sink, color=2ECC71, max_width=3.5cm, align=center
+    - Apache Iceberg Lakehouse
+    - Distributed Query Engine\\with Vectorized Execution
+\summary[color=E74C3C]{ingest}{proc}{Real-Time Ingestion\\and Processing}
+\boundary[color=2ECC71, style=dashed]{sink}{Persistent Analytics}
+\end{mindchart}
+
+\bigskip
+
+\subsection*{5. Balanced Map with Multi-Line Text and max\_width}
+
+\begin{mindchart}[layout=balanced, theme=ocean, style=underline, line=curve, scale=0.78]
+# Cloud Native\\Platform
+  - Edge Routing\\API Gateway, side=left
+    - Dynamic Load Balancing\\with Consistent Hashing
+    - Zero-Trust Security\\Mutual TLS Authentication
+  - Observability, side=left
+    - OpenTelemetry Distributed\\Trace Aggregation, max_width=3.2cm, align=right
+    - Prometheus Metrics\\Time Series
+  - Microservices, side=right
+    - Authentication \& Session\\Management Service
+    - Transaction Processing\\with Sagas Pattern
+  - Database Tier, side=right
+    - Distributed Multi-Region\\CockroachDB Cluster, max_width=3.6cm, align=left
+    - Redis Shared Cache
+\end{mindchart}
+
 \end{document}

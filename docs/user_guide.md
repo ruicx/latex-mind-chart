@@ -89,6 +89,12 @@ Branch theme colors automatically propagate to all subtopics:
   \begin{mindchart}[scale=0.8] ... \end{mindchart}
   ```
 
+### 2.6 Global Text Width & Alignment (`max_width`, `align`)
+- Set default maximum wrapping width and text alignment for all nodes:
+  ```latex
+  \begin{mindchart}[max_width=4cm, align=left] ... \end{mindchart}
+  ```
+
 ---
 
 ## 3. Node Syntax & Formatting
@@ -164,12 +170,44 @@ Nodes can be assigned options using `key=value` after a comma:
 - `name=<id>` or `id=<id>`: Assigns a unique name for overlay referencing.
 - `color=<hex|name>`: Overrides branch color (e.g. `color=E74C3C` or `color=blue`).
 - `side=left` or `side=right`: Forces a Level 1 branch to a specific side in a `balanced` map.
+- `max_width=<dim>`: Constrains maximum label width and auto-wraps long text (e.g. `max_width=3.5cm` or `max_width=120pt`).
+- `align=left|center|right`: Controls horizontal text alignment within the multi-line node box.
 
 ```latex
 # Architecture
   - Client Layer, name=client, color=3498DB, side=left
-  - Backend Services, name=server, color=2ECC71, side=right
+  - Backend Services, name=server, color=2ECC71, side=right, max_width=3.2cm, align=left
 ```
+
+### 3.4 Multi-Line Text Breaks & Auto-Wrapping
+
+`mindchart` provides flexible multi-line support:
+
+1. **Explicit Line Breaks (`\\`)**:
+   Insert `\\` anywhere within a node label:
+   ```latex
+   # Distributed Stream\\Processing Engine
+     - Real-Time Ingestion\\\& ETL Pipeline
+   ```
+
+2. **Markdown Source Line Continuation (`\\`)**:
+   In Markdown syntax, ending a source line with `\\` seamlessly continues the label onto the next indented line:
+   ```latex
+   - High Throughput Distributed\\
+     Stream Processing Engine, name=engine
+   ```
+
+3. **Auto-Wrapping with `max_width`**:
+   Specify `max_width` on the `\begin{mindchart}` environment or on individual nodes. LaTeX's paragraph engine typesets the text into exact bounding boxes:
+   ```latex
+   - OpenTelemetry Distributed Trace Aggregation, max_width=3.5cm, align=right
+   ```
+
+4. **Context-Aware Automatic Alignment**:
+   If `align` is not explicitly set:
+   - **Capsule / Card / Boxed / Badges**: Defaults to `center`.
+   - **Underline Style (Right Side)**: Defaults to `left` (flush to parent branch anchor).
+   - **Underline Style (Left Side)**: Defaults to `right` (flush to parent branch anchor).
 
 ---
 

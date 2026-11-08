@@ -173,4 +173,52 @@ assert_eq(ast.boundaries[1].title, "Subsystem A", "Bracket boundary title")
 
 print("Test 4 passed successfully!")
 
+-- Test 5: Multi-line and Auto-wrap text with line continuations and options
+local md_input5 = [[
+# Root Topic
+  - Line 1 of Subtopic\\
+    Line 2 of Subtopic, name=ml1, max_width=4cm, align=left
+  - Three Line Topic\\
+    Second Line\\
+    Third Line, name=ml2
+  - Single line with break\\directly here, name=ml3
+]]
+
+local root5 = parser.parse_markdown(md_input5)
+assert(root5 ~= nil, "Root 5 should not be nil")
+assert_eq(root5.text, "Root Topic", "Root 5 text")
+assert_eq(#root5.children, 3, "Root 5 children count")
+
+local ml1 = root5.children[1]
+assert_eq(ml1.text, [=[Line 1 of Subtopic\\Line 2 of Subtopic]=], "ml1 text joined with \\\\")
+assert_eq(ml1.options.name, "ml1", "ml1 name option")
+assert_eq(ml1.options.max_width, "4cm", "ml1 max_width option")
+assert_eq(ml1.options.align, "left", "ml1 align option")
+assert(ast.named_nodes["ml1"] == ml1, "named_nodes['ml1'] should match ml1")
+
+local ml2 = root5.children[2]
+assert_eq(ml2.text, [=[Three Line Topic\\Second Line\\Third Line]=], "ml2 text three lines joined")
+assert_eq(ml2.options.name, "ml2", "ml2 name option")
+
+local ml3 = root5.children[3]
+assert_eq(ml3.text, [=[Single line with break\\directly here]=], "ml3 text on single line")
+assert_eq(ml3.options.name, "ml3", "ml3 name option")
+
+-- Bracket notation multi-line test
+local bracket_input5 = [[
+[Root
+  [First Line\\
+   Second Line, name=bml1, max_width=3.5cm, align=center]
+]
+]]
+local root_b5 = parser.parse_bracket(bracket_input5)
+assert(root_b5 ~= nil, "Root B5 should not be nil")
+local bml1 = root_b5.children[1]
+assert_eq(bml1.text, [=[First Line\\Second Line]=], "bml1 text cleaned with \\\\")
+assert_eq(bml1.options.name, "bml1", "bml1 name")
+assert_eq(bml1.options.max_width, "3.5cm", "bml1 max_width")
+assert_eq(bml1.options.align, "center", "bml1 align")
+
+print("Test 5 passed successfully!")
+
 print("ALL PARSER UNIT TESTS PASSED!")
