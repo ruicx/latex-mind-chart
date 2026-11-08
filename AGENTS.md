@@ -27,6 +27,9 @@ This guide is designed for AI coding agents and human contributors working on th
 
 ```text
 mind_chart/
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # Cross-platform GitHub Actions CI matrix
 ├── AGENTS.md               # Agent & contributor guidelines (this file)
 ├── README.md               # User-facing project overview and showcases
 ├── LICENSE                 # MIT License
@@ -34,7 +37,10 @@ mind_chart/
 ├── docs/                   # Documentation in English
 │   ├── requirements.md     # Functional & non-functional requirements
 │   ├── design.md           # System architecture, pipeline, and data structures
-│   └── user_guide.md       # User guide, option tables, syntax, and overlay reference
+│   ├── user_guide.md       # User guide, option tables, syntax, and overlay reference
+│   └── roadmap.md          # Future roadmap & milestone planning
+├── scripts/
+│   └── build_package.py    # CTAN TDS packaging engine (NumPy docs + static typing)
 ├── tex/
 │   ├── mindchart.sty       # LaTeX package entry point, box registers & buffer callbacks
 │   └── mindchart.lua       # Custom module searcher for ./lua/
@@ -106,6 +112,18 @@ Before committing any modifications, run the following verification steps:
    ```pwsh
    pdftoppm -png -r 150 test/test_markdown.pdf test/markdown_preview
    ```
+
+4. **Verify Build Scripts & Packaging**:
+   Lint and type-check packaging scripts:
+   ```pwsh
+   uvx ruff check scripts/build_package.py
+   uvx ty check scripts/build_package.py
+   ```
+   Generate distribution archives:
+   ```pwsh
+   python scripts/build_package.py
+   ```
+   Must exit with code 0 and generate `dist/mindchart.tds.zip` and `dist/mindchart.zip`.
 
 ---
 

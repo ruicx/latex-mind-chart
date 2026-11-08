@@ -1,5 +1,6 @@
 # `mindchart` — Modern XMind-Style Mind Maps for LaTeX
 
+[![CI](https://github.com/latex-mindchart/mindchart/actions/workflows/ci.yml/badge.svg)](https://github.com/latex-mindchart/mindchart/actions/workflows/ci.yml)
 [![Engine: LuaLaTeX](https://img.shields.io/badge/Engine-LuaLaTeX-blue.svg)](https://www.luatex.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Architecture: Lua + TikZ](https://img.shields.io/badge/Architecture-Lua%20%2B%20TikZ-orange.svg)](docs/design.md)
@@ -22,10 +23,12 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
   - **3 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing).
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
   - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
-  - **4 Curated Color Themes**: `rainbow`, `business`, `forest`, `monochrome` with automatic branch color inheritance.
+  - **10 Curated Color Themes & Custom Palettes**: `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized`, ad-hoc inline lists (`palette={...}`), and custom defined palettes (`\mindchartDefineTheme`).
 - **✨ Overlays & Annotations**:
   - **Summary Brackets (`\summary`)**: Mathematical cubic Bézier curly brackets encompassing entire subtrees with dedicated summary topic cards.
   - **Cross-Branch Relationships (`\rel`)**: Curved dashed connection arrows with automatic node boundary clipping, configurable curve angles, and text annotation badges.
+  - **Subtree Folding & Indicators**: Collapse busy subtrees with `collapsed` / `folded` and render neat `+N` badge indicators.
+  - **PDF Document Bookmarks**: Auto-emit nested PDF bookmarks synchronized with `hyperref` (`bookmarks=true`).
 - **🔍 Proportional Scaling**: Seamless scaling via `scale=<factor>` where coordinates, fonts, and node shapes scale in perfect lockstep.
 
 ---
@@ -110,11 +113,13 @@ Options are passed as comma-separated key-value pairs to `\begin{mindchart}[...]
 | `layout` | `right`, `balanced`, `left` | `right` | Overall mind map geometric layout algorithm. |
 | `style` | `classic`, `boxed`, `underline` | `classic` | Visual card / box shape for nodes across hierarchy levels. |
 | `line` | `curve`, `elbow`, `straight` | `curve` | Connector line geometry. |
-| `theme` | `rainbow`, `business`, `forest`, `monochrome` | `rainbow` | Branch palette with automatic color propagation. |
+| `theme` | `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized` | `rainbow` | Branch palette with automatic color propagation. |
+| `palette` | `{HEX1, HEX2, ...}` | *none* | Ad-hoc inline hex color palette. |
+| `bookmarks`| `true`, `false` | `false` | Generate nested PDF document bookmarks via `hyperref`. |
 | `scale` | `<float>` (e.g. `0.85`, `1.2`) | `1` | Equiproportional scale for coordinates, boxes, and text. |
 | `syntax` | `markdown`, `bracket` | *auto* | Authoring syntax format (auto-detected by default). |
 
-### Overlays
+### Overlays & Node Flags
 
 - **Summary Brackets**:
   ```latex
@@ -125,6 +130,26 @@ Options are passed as comma-separated key-value pairs to `\begin{mindchart}[...]
   \rel[options]{from_node_name}{to_node_name}{Relationship Label}
   ```
   - Options: `color=<hex|name>`, `bend=<degrees>`, `line=<dashed|solid|dotted>`, `pos=<0.0-1.0>`, `side=<above|below|auto>`, `from_anchor=<anchor>`, `to_anchor=<anchor>`, `fill=<color|none>`.
+- **Subtree Folding**:
+  ```latex
+  - Complex Subsystem, collapsed
+    - Hidden Child 1
+    - Hidden Child 2
+  ```
+
+---
+
+## 📦 Distribution & Packaging
+
+`mindchart` includes a standalone packaging engine that generates CTAN-ready zip archives and TeX Directory Structure (TDS) bundles:
+
+```pwsh
+python scripts/build_package.py
+```
+
+Generated distribution archives:
+- `dist/mindchart.tds.zip`: Installable directly into `TEXMFHOME` or `TEXMFLOCAL`.
+- `dist/mindchart.zip`: Complete archive ready for CTAN submission containing sources, docs, examples, and the TDS bundle.
 
 ---
 

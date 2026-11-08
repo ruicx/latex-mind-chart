@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    name: Test on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up TeX Live
+        uses: dante-ev/setup-texlive@v1
+        with:
+          packages: >-
+            scheme-basic
+            luatex
+            lualatex-math
+            pgf
+            xcolor
+            geometry
+            hyperref
+            luatexbase
+            ctablestack
+            iftex
+            lm
+            amsfonts
+
+      - name: Run headless parser unit tests
+        run: texlua test/test_parser_md.lua
+
+      - name: Compile LaTeX test suites
+        shell: bash
+        run: |
+          lualatex -interaction=nonstopmode -output-directory=test test/test_mvp.tex
+          lualatex -interaction=nonstopmode -output-directory=test test/test_styles.tex
+          lualatex -interaction=nonstopmode -output-directory=test test/test_adv.tex
+          lualatex -interaction=nonstopmode -output-directory=test test/test_markdown.tex
+
+      - name: Upload PDF test artifacts
+        if: matrix.os == 'ubuntu-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-pdfs
+          path: test/*.pdf

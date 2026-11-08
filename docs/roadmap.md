@@ -204,4 +204,4 @@ The proposed features will be implemented iteratively following our test-driven 
 2. **Milestone 2**: Tapered Ribbon Connectors (`line=tapered`) and curve math.
 3. **Milestone 3**: Long Text Auto-wrap (`max_width`) & Multi-line parsing.
 4. **Milestone 4**: Node Tags & Badges (`tag`, `badge`).
-5. **Milestone 5**: GitHub Actions CI workflow & TDS packaging scripts.
+5. **Milestone 5**: GitHub Actions CI workflow & TDS packaging scripts. *(Completed: `.github/workflows/ci.yml` matrix CI and `scripts/build_package.py` CTAN packaging engine)*

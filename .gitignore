@@ -44,3 +44,9 @@ test/crop_rel.png
 test/test_box.*
 test/test_scale.*
 test/test_rel_anchors.*
+
+# Distribution and packaging
+dist/
+__pycache__/
+*.py[cod]
+.ruff_cache/
