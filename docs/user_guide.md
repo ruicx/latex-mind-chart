@@ -68,6 +68,7 @@ Options can be supplied as comma-separated key-value pairs in the environment ar
 | Value | Appearance |
 | :--- | :--- |
 | `curve` *(Default)* | Smooth organic cubic Bézier S-curves. |
+| `tapered` / `organic` | XMind-style calligraphic ribbon connectors that start thick at the root and taper down smoothly. |
 | `elbow` | Engineering/architectural rounded orthogonal lines. |
 | `straight` | Direct straight connector lines. |
 

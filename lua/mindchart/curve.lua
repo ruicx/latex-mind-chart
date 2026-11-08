@@ -58,10 +58,93 @@ function curve.get_anchors(parent, child)
     return xp, yp, xc, yc, x_line_end, y_line_end
 end
 
+--- Generates a TikZ path string for a tapered organic ribbon connector.
+--- Starts wide at parent and smoothly tapers down to child along cubic Bézier curves.
+--- @param parent table
+--- @param child table
+--- @param line_width number Global line width multiplier (default 1.2)
+--- @return string TikZ fill and draw command
+function curve.generate_tapered_path(parent, child, line_width)
+    local xp, yp, xc, yc, x_end, y_end = curve.get_anchors(parent, child)
+    local col = theme.to_tikz_color(child.color or "#2C3E50")
+    local lw = line_width or 1.2
+    local lw_scale = lw / 1.2
+
+    -- Determine ribbon widths based on parent hierarchy depth
+    local start_w, end_w
+    if parent.depth == 0 then
+        -- Root to Level 1: iconic wide organic ribbon
+        start_w = 7.5 * lw_scale
+        end_w = 2.0 * lw_scale
+    elseif parent.depth == 1 then
+        -- Level 1 to Level 2
+        start_w = 2.8 * lw_scale
+        end_w = 1.3 * lw_scale
+    else
+        -- Level 2+
+        start_w = 1.6 * lw_scale
+        end_w = 1.1 * lw_scale
+    end
+
+    if child.options.start_w then
+        start_w = tonumber(child.options.start_w) or start_w
+    end
+    if child.options.end_w then
+        end_w = tonumber(child.options.end_w) or end_w
+    end
+
+    local w0 = start_w / 2.0
+    local w1 = end_w / 2.0
+
+    local is_right = (child.side == "right")
+    local sign = is_right and 1.0 or -1.0
+
+    -- Overlap slightly into parent if parent has a solid filled shape (capsule, card, boxed)
+    local xp_eff = xp
+    if parent.style ~= "underline" then
+        xp_eff = xp - (sign * 1.5)
+    else
+        xp_eff = xp - (sign * 0.5)
+    end
+
+    -- Overlap slightly into child if child has a solid box/card
+    local xc_eff = xc
+    if child.style ~= "underline" then
+        xc_eff = xc + (sign * 1.5)
+    end
+
+    local dx = xc_eff - xp_eff
+    local c1x = xp_eff + (dx * 0.5)
+    local c2x = xc_eff - (dx * 0.5)
+
+    local ribbon_fill = string.format(
+        "\\fill[fill=%s] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- cycle;",
+        col,
+        xp_eff, yp + w0,
+        c1x, yp + w0,
+        c2x, yc + w1,
+        xc_eff, yc + w1,
+        xc_eff, yc - w1,
+        c2x, yc - w1,
+        c1x, yp - w0,
+        xp_eff, yp - w0
+    )
+
+    if child.style == "underline" then
+        local underline_draw = string.format(
+            "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+            col, end_w, xc, yc, x_end, y_end
+        )
+        return ribbon_fill .. "\n" .. underline_draw
+    else
+        return ribbon_fill
+    end
+end
+
 --- Generates a TikZ path string connecting parent and child.
 --- @param parent table
 --- @param child table
---- @param line_style string "curve" | "elbow" | "straight"
+--- @param line_style string "curve" | "elbow" | "straight" | "tapered"
 --- @param line_width number Line width in pt
 --- @return string TikZ draw command
 function curve.generate_path(parent, child, line_style, line_width)
@@ -69,7 +152,9 @@ function curve.generate_path(parent, child, line_style, line_width)
     local col = theme.to_tikz_color(child.color or "#2C3E50")
     local lw = line_width or 1.2
 
-    if line_style == "elbow" then
+    if line_style == "tapered" or line_style == "organic" then
+        return curve.generate_tapered_path(parent, child, line_width)
+    elseif line_style == "elbow" then
         local mid_x = (xp + xc) / 2.0
         if child.style == "underline" then
             return string.format(

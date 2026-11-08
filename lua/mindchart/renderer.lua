@@ -170,7 +170,8 @@ function renderer.render(root, options)
     -- Pass 1: Draw all connection curves
     ast.traverse_preorder(root, function(node, parent)
         if parent then
-            local path_cmd = curve.generate_path(parent, node, line_style, line_width)
+            local effective_line = node.options.line or line_style
+            local path_cmd = curve.generate_path(parent, node, effective_line, line_width)
             -- Replace raw hex in path_cmd with TikZ color
             local col_tikz = to_tikz_color(node.color or "#2C3E50")
             path_cmd = path_cmd:gsub("{#[%x%X]+}", col_tikz)
