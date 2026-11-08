@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[margin=1in]{geometry}
 \usepackage{./tex/mindchart}
+\usepackage[bookmarks=true, colorlinks=true, linkcolor=blue]{hyperref}
 
 \begin{document}
 
@@ -221,6 +222,51 @@
     - Sliding Window Aggregates
   - Action Dispatcher
     - Automated Webhook Trigger
+\end{mindchart}
+
+\newpage
+
+\section*{Subtree Folding \& PDF Bookmarks (\texttt{collapsed}, \texttt{bookmarks=true})}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic, line=tapered, bookmarks=true, scale=0.68]
+# Cloud Native Microservices Platform
+  - Ingestion \& API Gateway, color=3498DB
+    - OAuth2 \& OpenID Connect
+    - Rate Limiting Envoy Filter
+  - Compute \& Orchestration, collapsed, color=E67E22
+    - Kubernetes Worker Node Pools
+    - Service Mesh Envoy Sidecars
+    - Serverless KNative Functions
+    - GPU Vector Batch Nodes
+  - Storage \& State Services, folded, color=27AE60
+    - Distributed Spanner Database
+    - Kafka Event Commit Log
+    - Redis Shared Cluster Cache
+  - Observability Stack, color=8E44AD
+    - OpenTelemetry Distributed Traces
+    - Prometheus TSDB Metrics
+\end{mindchart}
+
+\vspace{1cm}
+
+\section*{Balanced Map with Collapsed Subtrees (\texttt{folded})}
+
+\begin{mindchart}[theme=nord, layout=balanced, style=underline, line=curve, scale=0.60]
+# Operating System Kernel
+  - Process Management, side=left
+    - CFS Scheduler
+    - IPC Pipes \& Signals
+  - Memory Subsystem, side=left, collapsed
+    - Virtual Memory Allocator
+    - Page Table TLB Cache
+    - Swap Daemon
+  - Device Drivers, side=right, collapsed
+    - PCI Express Bus
+    - Block Storage NVMe
+    - Network Interface Controller
+  - File Systems, side=right
+    - Virtual File System Switch
+    - Ext4 Journaling Driver
 \end{mindchart}
 
 \end{document}

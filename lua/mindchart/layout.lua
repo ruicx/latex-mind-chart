@@ -83,8 +83,11 @@ end
 local function compute_subtree_heights(node, cfg)
     compute_node_box(node, cfg)
 
-    if #node.children == 0 then
+    if #node.children == 0 or node.collapsed then
         node.subtree_height = node.box_height
+        if node.collapsed then
+            node.folded_count = ast.count_descendants(node)
+        end
         return
     end
 
@@ -114,7 +117,7 @@ local function position_subtree(node, start_x, start_y, direction, cfg)
         node.x = start_x - node.box_width
     end
 
-    if #node.children == 0 then return end
+    if #node.children == 0 or node.collapsed then return end
 
     -- Total height occupied by children
     local total_children_h = 0
@@ -254,7 +257,7 @@ end
 --- Helper to collect a node and all its descendants recursively.
 local function collect_subtree_nodes(n, acc)
     table.insert(acc, n)
-    if n.children then
+    if n.children and not n.collapsed then
         for _, child in ipairs(n.children) do
             collect_subtree_nodes(child, acc)
         end

@@ -63,6 +63,14 @@
     \directlua{mindchart.define_theme([==[#1]==], [==[#2]==])}%
 }
 
+% PDF bookmark emission (interfacing with hyperref if present)
+\newcommand{\mindchartEmitBookmark}[3]{%
+    % #1: level (integer), #2: text, #3: dest_name
+    \ifcsname pdfbookmark\endcsname%
+        \pdfbookmark[#1]{#2}{#3}%
+    \fi%
+}
+
 % Overlay markers for syntax completion inside environment
 \NewDocumentCommand{\summary}{ O{} m m m }{}
 \NewDocumentCommand{\rel}{ O{} m m m }{}

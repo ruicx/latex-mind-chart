@@ -84,9 +84,10 @@ local function parse_node_declaration(decl)
             if brace_level > 0 then brace_level = brace_level - 1 end
             table.insert(text_parts, c)
         elseif c == "," and brace_level == 0 and not in_math then
-            -- Check if what follows resembles key=value
+            -- Check if what follows resembles key=value or a known flag option
             local rest = decl:sub(i + 1)
-            if rest:match("^%s*[%w%-_]+%s*=") then
+            local flag = rest:match("^%s*([%w%-_]+)%s*$") or rest:match("^%s*([%w%-_]+)%s*,")
+            if rest:match("^%s*[%w%-_]+%s*=") or (flag and (flag == "collapsed" or flag == "folded" or flag == "left" or flag == "right")) then
                 opt_start = i + 1
                 break
             else

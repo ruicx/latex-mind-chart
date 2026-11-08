@@ -273,6 +273,88 @@ local function render_boundary_badge(b)
     end
 end
 
+--- Generates TikZ statements for an XMind-style fold/collapse indicator badge.
+--- @param node table
+--- @return string
+local function render_fold_indicator(node)
+    if not node or not node.collapsed or #node.children == 0 then return "" end
+
+    local is_right = (node.side ~= "left")
+    local col_tikz = to_tikz_color(node.color or "#2C3E50")
+
+    local anchor_y
+    if node.style == "underline" then
+        anchor_y = node.y - (node.box_height / 2.0)
+    else
+        anchor_y = node.y
+    end
+
+    local stem_x1, stem_x2, badge_x
+    if is_right then
+        local x_edge = node.x + node.box_width
+        stem_x1 = x_edge
+        stem_x2 = x_edge + 5.0
+        badge_x = x_edge + 12.0
+    else
+        local x_edge = node.x
+        stem_x1 = x_edge
+        stem_x2 = x_edge - 5.0
+        badge_x = x_edge - 12.0
+    end
+
+    local count_str
+    if node.options.fold_style == "plus" then
+        count_str = "+"
+    else
+        count_str = "+" .. tostring(node.folded_count or #node.children)
+    end
+
+    local parts = {}
+    -- Stem connecting line
+    table.insert(parts, string.format(
+        "\\draw [draw=%s, line width=1.0pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+        col_tikz, stem_x1, anchor_y, stem_x2, anchor_y
+    ))
+    -- Pill / circle badge
+    table.insert(parts, string.format(
+        "\\node (mc_fold_%d) [fill=%s, rounded corners=3pt, text=white, font=\\tiny\\bfseries, minimum height=9.0pt, inner sep=1.8pt] at (%.2fpt, %.2fpt) {%s};",
+        node.id, col_tikz, badge_x, anchor_y, count_str
+    ))
+
+    return table.concat(parts, " ")
+end
+
+--- Sanitizes LaTeX node text into a clean plain-text string for PDF bookmarks.
+--- @param text string
+--- @return string
+local function sanitize_for_bookmark(text)
+    if not text or text == "" then return "" end
+    local s = tostring(text)
+    -- Replace \\ with space
+    s = s:gsub("\\\\", " ")
+    -- Replace \frac{num}{den} with num/den
+    s = s:gsub("\\frac%s*(%b{})%s*(%b{})", function(num, den)
+        return num:sub(2, -2) .. "/" .. den:sub(2, -2)
+    end)
+    -- Strip math mode delimiters ($...$)
+    s = s:gsub("%$(.-)%$", "%1")
+    -- Strip LaTeX formatting commands: \textbf{...}, \textit{...}, etc.
+    s = s:gsub("\\[%a]+%*?%s*(%b{})", function(grp)
+        return grp:sub(2, -2)
+    end)
+    -- Keep Greek/math command names without backslash (\alpha -> alpha, \mu -> mu)
+    -- while preserving escaped characters like \&, \%, \_
+    s = s:gsub("\\([%a]+)", "%1")
+    -- Strip curly braces
+    s = s:gsub("[{}]", "")
+    -- Normalize whitespace
+    s = s:gsub("%s+", " ")
+    s = s:match("^%s*(.-)%s*$") or ""
+    return s
+end
+
+renderer.sanitize_for_bookmark = sanitize_for_bookmark
+
 --- Emits the full TikZ picture to TeX.
 --- @param root table The AST root node.
 --- @param options table Global options.
@@ -281,6 +363,24 @@ function renderer.render(root, options)
     local line_style = options.line or "curve"
     local line_width = tonumber(options.line_width) or 1.2
     local scale = options.scale or "1"
+
+    -- Emit PDF Bookmarks if requested
+    if options.bookmarks == true or options.bookmarks == "true" or options.pdf_bookmarks then
+        local base_lvl = tonumber(options.bookmark_level) or 1
+        local max_d = tonumber(options.bookmark_depth) or 4
+        local trav = (options.bookmark_collapsed == true or options.bookmark_collapsed == "true")
+                     and ast.traverse_preorder or ast.traverse_visible
+        trav(root, function(n)
+            if n.depth <= max_d and n.options.bookmark ~= "false" and n.options.bookmark ~= false then
+                local bm_title = n.options.bookmark or sanitize_for_bookmark(n.text)
+                if bm_title ~= "" then
+                    local lvl = base_lvl + n.depth
+                    local dest_name = string.format("mc_node_%d", n.id)
+                    tex.print(string.format("\\mindchartEmitBookmark{%d}{%s}{%s}", lvl, bm_title, dest_name))
+                end
+            end
+        end)
+    end
 
     tex.print(string.format(
         "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.style={transform shape, outer sep=0pt}]",
@@ -303,8 +403,8 @@ function renderer.render(root, options)
         end
     end
 
-    -- Pass 1: Draw all connection curves
-    ast.traverse_preorder(root, function(node, parent)
+    -- Pass 1: Draw all connection curves (visible nodes only)
+    ast.traverse_visible(root, function(node, parent)
         if parent then
             local effective_line = node.options.line or line_style
             local path_cmd = curve.generate_path(parent, node, effective_line, line_width)
@@ -315,20 +415,32 @@ function renderer.render(root, options)
         end
     end)
 
-    -- Pass 2: Draw all node shapes and labels
-    ast.traverse_preorder(root, function(node)
+    -- Pass 2: Draw all node shapes and labels (visible nodes only)
+    ast.traverse_visible(root, function(node)
         local node_cmd = render_node(node, options)
         tex.print(node_cmd)
+
+        -- If node is collapsed, draw fold indicator pill
+        if node.collapsed and #node.children > 0 then
+            local fold_cmd = render_fold_indicator(node)
+            if fold_cmd ~= "" then
+                tex.print(fold_cmd)
+            end
+        end
     end)
 
     -- Pass 3: Draw summary brackets and summary nodes
     for _, s in ipairs(ast.summaries) do
-        if s.bracket and s.node then
-            local bracket_cmd = curve.generate_bracket(s.bracket, s.node)
-            tex.print(bracket_cmd)
+        local from_node = ast.named_nodes[s.from]
+        local to_node = ast.named_nodes[s.to]
+        if from_node and to_node and ast.is_node_visible(from_node) and ast.is_node_visible(to_node) then
+            if s.bracket and s.node then
+                local bracket_cmd = curve.generate_bracket(s.bracket, s.node)
+                tex.print(bracket_cmd)
 
-            local s_node_cmd = render_node(s.node, options)
-            tex.print(s_node_cmd)
+                local s_node_cmd = render_node(s.node, options)
+                tex.print(s_node_cmd)
+            end
         end
     end
 
@@ -336,7 +448,7 @@ function renderer.render(root, options)
     for _, r in ipairs(ast.relationships) do
         local from_node = ast.named_nodes[r.from]
         local to_node = ast.named_nodes[r.to]
-        if from_node and to_node then
+        if from_node and to_node and ast.is_node_visible(from_node) and ast.is_node_visible(to_node) then
             local rel_cmd = curve.generate_relationship(r, from_node, to_node)
             tex.print(rel_cmd)
         end

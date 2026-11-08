@@ -129,6 +129,28 @@ Supply an ad-hoc custom palette directly to a specific `mindchart` environment:
   \begin{mindchart}[max_width=4cm, align=left] ... \end{mindchart}
   ```
 
+### 2.7 PDF Bookmarks & Navigation (`bookmarks = true`)
+Automatically injects the mind map hierarchy into the PDF document outline / bookmarks tree (when `hyperref` is loaded), enabling instant clickable sidebar navigation in all PDF readers:
+
+```latex
+\usepackage[bookmarks=true]{hyperref}
+\usepackage{mindchart}
+
+\begin{mindchart}[bookmarks=true, bookmark_depth=3]
+# System Architecture
+  - Ingestion Layer
+    - Kafka Event Ingestion
+  - Compute Engine
+...
+\end{mindchart}
+```
+
+- `bookmarks=true` or `bookmarks`: Enables PDF outline generation for the chart.
+- `bookmark_depth=<number>`: Maximum hierarchy depth to export (default: `4`).
+- `bookmark_level=<number>`: Base starting level in the PDF outline tree (default: `1`).
+- `bookmark="<text>"`: Custom outline label override for a specific node (or `bookmark=false` to exclude it).
+- Math formulas and LaTeX formatting macros are automatically sanitized into clean plain-text strings for the PDF catalog.
+
 ---
 
 ## 3. Node Syntax & Formatting
@@ -283,6 +305,31 @@ Standardized semantic workflow status indicators rendered as trailing micro-pill
 - `status=Done`: Emerald Green (`#27AE60`) completion badge.
 - `status=WIP` / `status=InProgress`: Bright Orange (`#E67E22`) work-in-progress badge.
 - `status=TODO`: Slate Gray (`#7F8C8D`) planned task badge.
+
+### 3.6 Subtree Folding & Collapse (`collapsed`, `folded`)
+
+In multi-tier or complex mind maps, authors can fold secondary branches to present a clean, high-level overview without cluttering the page:
+
+```latex
+\begin{mindchart}[theme=rainbow, style=classic, line=tapered]
+# Microservices Platform
+  - API Gateway
+    - Authentication Envoy Filter
+  - Compute Cluster, collapsed
+    - Kubernetes Worker Node Pools
+    - Serverless Functions
+    - GPU Vector Batch Nodes
+  - Distributed Storage, folded
+    - S3 Object Store
+    - Distributed Spanner
+\end{mindchart}
+```
+
+#### Key Capabilities:
+- **Automatic Descendant Counting**: Folded nodes compute the total number of collapsed sub-topics and render an XMind-style pill at the branch connection socket (e.g. `+3`, `+4`).
+- **Dynamic Space Reclamation**: Collapsed subtrees do not reserve canvas whitespace, allowing adjacent sibling branches to pack tightly and conserving page margins.
+- **Bi-Directional Support**: Fold indicators dock cleanly on the right side of right-growing branches and on the left side of left-growing branches across all visual styles (`classic`, `card`, `boxed`, `underline`).
+- **Fold Indicator Style**: `fold_style=count` *(Default)* displays `+N` with the descendant count; `fold_style=plus` displays `+`.
 
 ---
 

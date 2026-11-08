@@ -111,7 +111,17 @@ function ast.new_node(text, options)
         -- Appearance, populated by theme
         color = nil,
         style = nil,
+
+        -- Folding & Collapse state
+        collapsed = false,
+        folded_count = 0,
     }
+
+    if options then
+        if options.collapsed == true or options.collapsed == "true" or options.folded == true or options.folded == "true" then
+            node.collapsed = true
+        end
+    end
 
     if options and (options.name or options.id) then
         local name = options.name or options.id
@@ -176,6 +186,46 @@ function ast.count_nodes(root)
         count = count + 1
     end)
     return count
+end
+
+--- Counts the total number of descendant nodes in a subtree (excluding the node itself).
+--- @param node table
+--- @return number
+function ast.count_descendants(node)
+    if not node or not node.children then return 0 end
+    local count = #node.children
+    for _, child in ipairs(node.children) do
+        count = count + ast.count_descendants(child)
+    end
+    return count
+end
+
+--- Checks if a node is currently visible (i.e. none of its ancestors are collapsed).
+--- @param node table
+--- @return boolean
+function ast.is_node_visible(node)
+    if not node then return false end
+    local cur = node.parent
+    while cur do
+        if cur.collapsed then
+            return false
+        end
+        cur = cur.parent
+    end
+    return true
+end
+
+--- Traverses only visible nodes in the tree, pruning subtrees whose parent is collapsed.
+--- @param root table The root Node.
+--- @param callback function Function receiving (node, parent).
+function ast.traverse_visible(root, callback)
+    if not root then return end
+    callback(root, root.parent)
+    if not root.collapsed and root.children then
+        for _, child in ipairs(root.children) do
+            ast.traverse_visible(child, callback)
+        end
+    end
 end
 
 return ast
