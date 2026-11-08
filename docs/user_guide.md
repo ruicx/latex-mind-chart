@@ -209,6 +209,47 @@ Nodes can be assigned options using `key=value` after a comma:
    - **Underline Style (Right Side)**: Defaults to `left` (flush to parent branch anchor).
    - **Underline Style (Left Side)**: Defaults to `right` (flush to parent branch anchor).
 
+### 3.5 Node Badges, Metadata Tags, and Status Indicators
+
+`mindchart` allows adding structured metadata, step counters, priority pills, version badges, and workflow status indicators to any node:
+
+```latex
+\begin{mindchart}[theme=rainbow, style=classic]
+# Release Engineering Pipeline
+  - Ingestion Gateway, badge=1, tag=v2.4, status=Done
+    - Kafka Event Ingestion, priority=P0, status=Done
+    - Proto Schema Validation, tag=gRPC, status=Done
+  - Stream Compute Engine, badge=2, tag={Flink, Rust}, status=WIP
+    - Exactly-Once State Checkpoints, priority=P0, tag=High-Priority, status=WIP
+    - Sliding Window Metrics, status=TODO
+  - Lakehouse Storage \& Query, badge=3, tag={Iceberg, S3}, status=TODO
+    - Parquet Vectorized Writer, priority=P1
+    - Trino Distributed SQL Engine, tag={Analytics, BI}
+\end{mindchart}
+```
+
+#### 1. Badges & Priority Markers (`badge`, `priority`)
+- `badge=<string|number>`: A leading micro-badge prepended to the node text (e.g. `badge=1`, `badge=A`, `badge=P0`).
+- `priority=<string|number>`: An alias for `badge` (e.g. `priority=P0`).
+- **Visual Styling**:
+  - `badge_style=pill` *(Default)*: Solid colored fill with bold white text. Short 1-2 character badges render as symmetric circular markers.
+  - `badge_style=subtle`: Soft 15% background tint with colored text.
+  - `badge_color=<color>`: Overrides badge background color (inherits branch color by default).
+
+#### 2. Categorical Metadata Tags (`tag`, `tags`)
+- `tag=<string>`: A trailing micro-pill appended after the node text (e.g. `tag=v2.4`, `tag=gRPC`).
+- `tag={<string1>, <string2>, ...}`: Multiple comma-separated tags enclosed in braces (e.g. `tag={Flink, Rust}`).
+- **Visual Styling**:
+  - `tag_style=subtle` *(Default)*: Modern soft pastel appearance with 12% background tint, 38% border stroke, and colored text.
+  - `tag_style=pill`: Solid colored fill with bold white text.
+  - `tag_color=<color>`: Overrides tag color (inherits branch color by default).
+
+#### 3. Semantic Status Indicators (`status`)
+Standardized semantic workflow status indicators rendered as trailing micro-pills:
+- `status=Done`: Emerald Green (`#27AE60`) completion badge.
+- `status=WIP` / `status=InProgress`: Bright Orange (`#E67E22`) work-in-progress badge.
+- `status=TODO`: Slate Gray (`#7F8C8D`) planned task badge.
+
 ---
 
 ## 4. Overlay Elements

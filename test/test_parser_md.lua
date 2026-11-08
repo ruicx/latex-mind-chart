@@ -221,4 +221,58 @@ assert_eq(bml1.options.align, "center", "bml1 align")
 
 print("Test 5 passed successfully!")
 
+-- Test 6: Node Badges and Tags (badge, priority, tag, status)
+local md_input6 = [[
+# System Architecture
+  - API Gateway, badge=1, tag=Networking, name=gw
+  - Core Processing, priority=P0, tag={Security, v2.0}, status=Done, name=core
+  - Async Worker, status=WIP, name=worker
+]]
+
+local root6 = parser.parse_markdown(md_input6)
+assert(root6 ~= nil, "Root 6 should not be nil")
+assert_eq(#root6.children, 3, "Root 6 children count")
+
+local gw = root6.children[1]
+assert(gw.badge_obj ~= nil, "gw.badge_obj should exist")
+assert_eq(gw.badge_obj.text, "1", "gw badge text")
+assert(gw.tag_objs ~= nil, "gw.tag_objs should exist")
+assert_eq(#gw.tag_objs, 1, "gw tags count")
+assert_eq(gw.tag_objs[1].text, "Networking", "gw tag 1 text")
+assert_eq(gw.tag_objs[1].is_status, false, "gw tag 1 is not status")
+
+local core = root6.children[2]
+assert(core.badge_obj ~= nil, "core.badge_obj should exist")
+assert_eq(core.badge_obj.text, "P0", "core badge text from priority")
+assert(core.tag_objs ~= nil, "core.tag_objs should exist")
+assert_eq(#core.tag_objs, 3, "core tags count (2 tags + 1 status)")
+assert_eq(core.tag_objs[1].text, "Security", "core tag 1")
+assert_eq(core.tag_objs[2].text, "v2.0", "core tag 2")
+assert_eq(core.tag_objs[3].text, "Done", "core status tag")
+assert_eq(core.tag_objs[3].is_status, true, "core tag 3 is status")
+
+local worker = root6.children[3]
+assert(worker.badge_obj == nil, "worker should have no badge")
+assert(worker.tag_objs ~= nil, "worker.tag_objs should exist")
+assert_eq(#worker.tag_objs, 1, "worker tags count")
+assert_eq(worker.tag_objs[1].text, "WIP", "worker status text")
+assert_eq(worker.tag_objs[1].is_status, true, "worker status is_status")
+
+-- Bracket notation test with badges & tags
+local bracket_input6 = [[
+[Root
+  [Subsystem A, badge=A, status=TODO]
+]
+]]
+local root_b6 = parser.parse_bracket(bracket_input6)
+assert(root_b6 ~= nil, "Root B6 should not be nil")
+local sa = root_b6.children[1]
+assert(sa.badge_obj ~= nil, "sa.badge_obj should exist")
+assert_eq(sa.badge_obj.text, "A", "sa badge text")
+assert(sa.tag_objs ~= nil, "sa.tag_objs should exist")
+assert_eq(sa.tag_objs[1].text, "TODO", "sa tag text")
+assert_eq(sa.tag_objs[1].is_status, true, "sa tag is status")
+
+print("Test 6 passed successfully!")
+
 print("ALL PARSER UNIT TESTS PASSED!")

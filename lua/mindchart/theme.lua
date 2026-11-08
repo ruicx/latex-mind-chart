@@ -120,6 +120,31 @@ function theme.apply(root, options)
             b.node.style = "badge"
         end
     end
+
+    -- Style badge and tag objects
+    ast.traverse_preorder(root, function(node)
+        if node.badge_obj then
+            node.badge_obj.color = node.badge_obj.options.color or node.color or root_color
+        end
+        if node.tag_objs then
+            for _, tag in ipairs(node.tag_objs) do
+                if tag.is_status then
+                    local low = tag.text:lower()
+                    if low == "done" or low == "finished" or low == "completed" or low == "ok" or low == "pass" then
+                        tag.color = tag.options.color or "#27AE60" -- Emerald Green
+                    elseif low == "wip" or low == "doing" or low == "in progress" or low == "active" then
+                        tag.color = tag.options.color or "#E67E22" -- Orange
+                    elseif low == "todo" or low == "pending" or low == "blocked" then
+                        tag.color = tag.options.color or "#7F8C8D" -- Slate
+                    else
+                        tag.color = tag.options.color or node.color or root_color
+                    end
+                else
+                    tag.color = tag.options.color or node.color or root_color
+                end
+            end
+        end
+    end)
 end
 
 --- Converts a hex string like "#E74C3C" or "E74C3C" to RGB values (0-255).

@@ -32,10 +32,49 @@ local function compute_node_box(node, cfg)
         px, py = 5.0, 3.0
     end
 
+    local extra_w = 0.0
+    local max_h = node.height + node.depth_pt
+
+    -- Compute badge box metrics if present
+    if node.badge_obj and node.badge_obj.width then
+        local b = node.badge_obj
+        local bh = (b.height + b.depth_pt) + 4.0
+        local bw
+        if #b.text <= 2 then
+            bw = math.max(bh, b.width + 6.0)
+        else
+            bw = b.width + 8.0
+        end
+        b.box_width = bw
+        b.box_height = bh
+        b.gap = 6.0
+        extra_w = extra_w + bw + b.gap
+        max_h = math.max(max_h, bh)
+    end
+
+    -- Compute tags box metrics if present
+    if node.tag_objs and #node.tag_objs > 0 then
+        local tags_w = 0.0
+        for i, t in ipairs(node.tag_objs) do
+            if t.width then
+                local th = (t.height + t.depth_pt) + 3.5
+                local tw = t.width + 8.0
+                t.box_width = tw
+                t.box_height = th
+                t.gap = 4.0
+                tags_w = tags_w + tw + (i > 1 and t.gap or 0.0)
+                max_h = math.max(max_h, th)
+            end
+        end
+        if tags_w > 0 then
+            extra_w = extra_w + 6.0 + tags_w
+        end
+    end
+
     node.pad_x = px
     node.pad_y = py
-    node.box_width = node.width + 2 * px
-    node.box_height = node.height + node.depth_pt + 2 * py
+    node.box_width = node.width + extra_w + 2 * px
+    node.box_height = max_h + 2 * py
 end
 
 --- Recursively computes the subtree bounding height for all nodes.

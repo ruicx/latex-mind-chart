@@ -23,6 +23,26 @@ local function to_tikz_color(col)
     end
 end
 
+--- Calculates a soft pastel tint RGB or fallback for borders and fills.
+--- @param hex_or_name string
+--- @param factor number 0.0 to 1.0 (e.g. 0.12 for 12% tint)
+--- @return string
+local function get_tint_rgb(hex_or_name, factor)
+    if not hex_or_name or hex_or_name == "" then
+        hex_or_name = "#2C3E50"
+    end
+    local clean = hex_or_name:gsub("#", "")
+    if #clean == 6 and clean:match("^%x+$") then
+        local r, g, b = theme.hex_to_rgb(clean)
+        local rt = math.floor(255 - (255 - r) * factor + 0.5)
+        local gt = math.floor(255 - (255 - g) * factor + 0.5)
+        local bt = math.floor(255 - (255 - b) * factor + 0.5)
+        return string.format("{rgb,255:red,%d;green,%d;blue,%d}", rt, gt, bt)
+    else
+        return string.format("%s!%d", hex_or_name, math.floor(factor * 100))
+    end
+end
+
 --- Generates TikZ statements for a single node.
 --- @param node table
 --- @param options table|nil Global options
@@ -52,33 +72,128 @@ local function render_node(node, options)
         end
     end
 
-    if node.style == "capsule" or node.depth == 0 then
-        -- Root / Capsule: Solid fill, high contrast white text, bold
-        return string.format(
-            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-        )
-    elseif node.style == "card" then
-        -- Level 1 Card: Rounded box with colored border and white background
-        return string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-        )
-    elseif node.style == "boxed" then
-        -- Boxed: Clean thin border card
-        return string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-            node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-        )
-    else
-        -- Underline style: Text sits directly on top of the underline
-        local tx = node.x + node.pad_x + (node.width / 2.0)
-        local ty = node.y
-        return string.format(
-            "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
-            node.id, extra_opts, tx, ty, node.text
-        )
+    local has_badge = (node.badge_obj and node.badge_obj.width ~= nil)
+    local has_tags = (node.tag_objs and #node.tag_objs > 0)
+
+    if not has_badge and not has_tags then
+        if node.style == "capsule" or node.depth == 0 then
+            -- Root / Capsule: Solid fill, high contrast white text, bold
+            return string.format(
+                "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+            )
+        elseif node.style == "card" then
+            -- Level 1 Card: Rounded box with colored border and white background
+            return string.format(
+                "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+            )
+        elseif node.style == "boxed" then
+            -- Boxed: Clean thin border card
+            return string.format(
+                "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+            )
+        else
+            -- Underline style: Text sits directly on top of the underline
+            local tx = node.x + node.pad_x + (node.width / 2.0)
+            local ty = node.y
+            return string.format(
+                "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, extra_opts, tx, ty, node.text
+            )
+        end
     end
+
+    -- Compound node containing badge, text, and/or tags
+    local parts = {}
+
+    -- 1. Container shape (named mc_node_<id> for relationship anchors)
+    if node.style == "capsule" or node.depth == 0 then
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy
+        ))
+    elseif node.style == "card" then
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy
+        ))
+    elseif node.style == "boxed" then
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, col_tikz, node.box_width, node.box_height, cx, cy
+        ))
+    else
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [anchor=center, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, node.box_width, node.box_height, cx, cy
+        ))
+    end
+
+    local x_cur = node.x + node.pad_x
+
+    -- 2. Badge (leading)
+    if has_badge then
+        local b = node.badge_obj
+        local bx = x_cur + (b.box_width / 2.0)
+        local b_col = to_tikz_color(b.color or node.color or "#2C3E50")
+        if b.options.style == "subtle" then
+            local bg_tint = get_tint_rgb(b.color or node.color or "#2C3E50", 0.15)
+            table.insert(parts, string.format(
+                "\\node (mc_badge_%d) [fill=%s, rounded corners=3pt, text=%s, font=\\scriptsize\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
+                b.id, bg_tint, b_col, b.box_width, b.box_height, bx, cy, b.text
+            ))
+        else
+            table.insert(parts, string.format(
+                "\\node (mc_badge_%d) [fill=%s, rounded corners=3pt, text=white, font=\\scriptsize\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
+                b.id, b_col, b.box_width, b.box_height, bx, cy, b.text
+            ))
+        end
+        x_cur = x_cur + b.box_width + b.gap
+    end
+
+    -- 3. Main Text
+    local text_font = ""
+    local text_col = "{rgb,255:red,44;green,62;blue,80}"
+    if node.style == "capsule" or node.depth == 0 then
+        text_col = "white"
+        text_font = ", font=\\bfseries"
+    elseif node.style == "card" then
+        text_font = ", font=\\bfseries"
+    end
+
+    table.insert(parts, string.format(
+        "\\node [anchor=west, text=%s%s, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+        text_col, text_font, extra_opts, x_cur, cy, node.text
+    ))
+    x_cur = x_cur + node.width
+
+    -- 4. Tags (trailing)
+    if has_tags then
+        x_cur = x_cur + 6.0
+        for _, t in ipairs(node.tag_objs) do
+            local tag_x = x_cur + (t.box_width / 2.0)
+            local t_col = to_tikz_color(t.color or node.color or "#2C3E50")
+            if t.options.style == "pill" then
+                table.insert(parts, string.format(
+                    "\\node (mc_tag_%d) [fill=%s, rounded corners=2.5pt, text=white, font=\\tiny\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
+                    t.id, t_col, t.box_width, t.box_height, tag_x, cy, t.text
+                ))
+            else
+                -- Default subtle style
+                local bg_tint = get_tint_rgb(t.color or node.color or "#2C3E50", 0.12)
+                local border_tint = get_tint_rgb(t.color or node.color or "#2C3E50", 0.38)
+                table.insert(parts, string.format(
+                    "\\node (mc_tag_%d) [draw=%s, line width=0.6pt, fill=%s, rounded corners=2.5pt, text=%s, font=\\tiny\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {%s};",
+                    t.id, border_tint, bg_tint, t_col, t.box_width, t.box_height, tag_x, cy, t.text
+                ))
+            end
+            x_cur = x_cur + t.box_width + t.gap
+        end
+    end
+
+    return table.concat(parts, " ")
 end
 
 --- Generates TikZ statements for a subtree boundary box (background).

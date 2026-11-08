@@ -122,4 +122,41 @@
 ]
 \end{mindchart}
 
+\newpage
+
+\section*{Node Badges, Metadata Tags, and Status Indicators (\texttt{badge}, \texttt{tag}, \texttt{status})}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic, line=tapered, scale=0.60]
+# Release Engineering Pipeline, color=2C3E50
+  - Ingestion Gateway, badge=1, tag=v2.4, status=Done, color=3498DB
+    - Kafka Event Ingestion, badge=P0, status=Done
+    - Proto Schema Validation, tag=gRPC, status=Done
+  - Stream Compute Engine, badge=2, tag={Flink, Rust}, status=WIP, color=E67E22
+    - Exactly-Once State Checkpoints, badge=P0, tag=High-Priority, status=WIP
+    - Sliding Window Metrics, status=TODO
+  - Lakehouse Storage \& Query, badge=3, tag={Iceberg, S3}, status=TODO, color=27AE60
+    - Parquet Vectorized Writer, badge=P1
+    - Trino Distributed SQL Engine, tag={Analytics, BI}
+\end{mindchart}
+
+\vspace{1cm}
+
+\section*{Balanced Map with Micro-Badges \& Categorical Tags}
+
+\begin{mindchart}[theme=business, layout=balanced, style=underline, line=curve, scale=0.50]
+# Cloud Infrastructure
+  - Identity Gateway, badge=A, side=left, status=Done
+    - OAuth2 \& OIDC Provider, tag=Security
+    - Mutual TLS Proxy, badge=P0, status=Done
+  - Observability, badge=B, side=left, status=WIP
+    - OpenTelemetry Collector, tag={Traces, Logs}
+    - Prometheus TSDB, badge=P1, status=WIP
+  - Compute Cluster, badge=C, side=right, status=Done
+    - Kubernetes Control Plane, tag=HA, status=Done
+    - Containerd Runtime, tag={Linux, cgroups}
+  - Distributed Storage, badge=D, side=right, status=WIP
+    - Ceph Block Storage, badge=P0, status=WIP
+    - S3 Compatible Object Store, tag=MinIO, status=TODO
+\end{mindchart}
+
 \end{document}

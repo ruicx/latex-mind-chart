@@ -11,6 +11,78 @@ ast.summaries = {}
 ast.relationships = {}
 ast.boundaries = {}
 
+--- Allocates and returns the next unique integer node ID.
+--- @return number
+function ast.next_id()
+    node_id_counter = node_id_counter + 1
+    return node_id_counter
+end
+
+--- Initializes badge and tag sub-objects for a node based on its options.
+--- @param node table
+function ast.init_badges_and_tags(node)
+    local options = node.options or {}
+
+    -- Process badge options
+    local badge_val = options.badge or options.priority
+    if badge_val and tostring(badge_val) ~= "" and not node.badge_obj then
+        node.badge_obj = {
+            id = ast.next_id(),
+            text = tostring(badge_val),
+            options = {
+                color = options.badge_color,
+                style = options.badge_style or "pill",
+            },
+            width = 0.0,
+            height = 0.0,
+            depth_pt = 0.0,
+            box_width = 0.0,
+            box_height = 0.0,
+            gap = 5.0,
+        }
+    end
+
+    -- Process tag options
+    local raw_tag = options.tag or options.tags
+    local tag_list = {}
+    if raw_tag and tostring(raw_tag) ~= "" then
+        for t in tostring(raw_tag):gmatch("[^,]+") do
+            t = t:match("^%s*(.-)%s*$")
+            if t ~= "" then
+                table.insert(tag_list, { text = t, is_status = false })
+            end
+        end
+    end
+
+    if options.status and tostring(options.status) ~= "" then
+        local s = tostring(options.status):match("^%s*(.-)%s*$")
+        if s ~= "" then
+            table.insert(tag_list, { text = s, is_status = true })
+        end
+    end
+
+    if #tag_list > 0 and not node.tag_objs then
+        node.tag_objs = {}
+        for _, t in ipairs(tag_list) do
+            table.insert(node.tag_objs, {
+                id = ast.next_id(),
+                text = t.text,
+                is_status = t.is_status,
+                options = {
+                    color = options.tag_color,
+                    style = options.tag_style or (t.is_status and "pill" or "subtle"),
+                },
+                width = 0.0,
+                height = 0.0,
+                depth_pt = 0.0,
+                box_width = 0.0,
+                box_height = 0.0,
+                gap = 3.5,
+            })
+        end
+    end
+end
+
 --- Creates a new AST Node.
 --- @param text string The raw text/content of the node.
 --- @param options table|nil Optional table of per-node options (e.g. side, color).
@@ -45,6 +117,10 @@ function ast.new_node(text, options)
         local name = options.name or options.id
         ast.named_nodes[name] = node
         node.name = name
+    end
+
+    if options then
+        ast.init_badges_and_tags(node)
     end
 
     return node

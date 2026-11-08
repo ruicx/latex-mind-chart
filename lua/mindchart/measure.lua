@@ -32,6 +32,14 @@ function measure.init(root, options)
     node_map = {}
     ast.traverse_preorder(root, function(node)
         node_map[node.id] = node
+        if node.badge_obj then
+            node_map[node.badge_obj.id] = node.badge_obj
+        end
+        if node.tag_objs then
+            for _, tag in ipairs(node.tag_objs) do
+                node_map[tag.id] = tag
+            end
+        end
     end)
 
     -- Also index summary nodes
@@ -68,7 +76,11 @@ function measure.emit_measurement_commands(options)
             node.max_width = mw
         end
 
-        local is_bold = (node.depth == 0 or node.style == "capsule" or node.style == "card")
+        local global_style = options.style or "classic"
+        local is_card = (node.style == "card" or node.options.style == "card" or
+            ((not node.style or node.style == "classic") and node.depth == 1 and global_style == "classic"))
+        local is_capsule = (node.depth == 0 or node.style == "capsule" or node.options.style == "capsule")
+        local is_bold = is_capsule or is_card
         local measure_text = node.text
         if is_bold then
             measure_text = "\\bfseries " .. node.text:gsub("\\\\", "\\\\\\bfseries ")
@@ -81,6 +93,20 @@ function measure.emit_measurement_commands(options)
             ))
         else
             tex.print(string.format("\\mindchartMeasureItem{%d}{%s}", node.id, measure_text))
+        end
+
+        -- Measure badge if present
+        if node.badge_obj and node.badge_obj.text ~= "" then
+            tex.print(string.format("\\mindchartMeasureItem{%d}{{\\scriptsize\\bfseries %s}}", node.badge_obj.id, node.badge_obj.text))
+        end
+
+        -- Measure tags if present
+        if node.tag_objs then
+            for _, tag in ipairs(node.tag_objs) do
+                if tag.text ~= "" then
+                    tex.print(string.format("\\mindchartMeasureItem{%d}{{\\tiny\\bfseries %s}}", tag.id, tag.text))
+                end
+            end
         end
     end)
 

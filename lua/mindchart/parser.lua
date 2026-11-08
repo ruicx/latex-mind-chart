@@ -337,6 +337,7 @@ function parser.parse_bracket(input)
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     parent_node.text = text
                     for k, v in pairs(opts) do parent_node.options[k] = v end
+                    ast.init_badges_and_tags(parent_node)
                     if opts.name or opts.id then
                         local n = opts.name or opts.id
                         ast.named_nodes[n] = parent_node
@@ -365,6 +366,7 @@ function parser.parse_bracket(input)
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     node.text = text
                     for k, v in pairs(opts) do node.options[k] = v end
+                    ast.init_badges_and_tags(node)
                     if opts.name or opts.id then
                         local n = opts.name or opts.id
                         ast.named_nodes[n] = node
