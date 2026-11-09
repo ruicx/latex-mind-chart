@@ -24,9 +24,14 @@ The roadmap is organized into iterative phases designed to elevate `mindchart` i
 │ Ext 3   │ PDF Document Bookmarks Sync    │ Metadata   │ hyperref sync │ Completed (v1.0.0)  │
 ├─────────┼────────────────────────────────┼────────────┼───────────────┼─────────────────────┤
 │ Phase 6 │ Vertical & Org-Chart Layout    │ Layout     │ layout=down   │ Completed (v2.0.0)  │
-│ Phase 7 │ Native Vector Icons & Symbols  │ Metadata   │ icon=...      │ Next in Progress    │
-│ Phase 8 │ Custom Node Geometric Shapes   │ Visual     │ shape=diamond │ Planned (v2.0.0)    │
-│ Phase 9 │ Fishbone / Ishikawa Diagram    │ Layout     │ layout=fish   │ Planned (v2.0.0)    │
+│ Phase 7 │ Native Vector Icons & Symbols  │ Metadata   │ icon=...      │ Completed (v2.0.0)  │
+│ Phase 8 │ Custom Node Geometric Shapes   │ Visual     │ shape=diamond │ Completed (v2.0.0)  │
+│ Phase 9 │ Fishbone / Ishikawa Diagram    │ Layout     │ layout=fish   │ Completed (v2.0.0)  │
+├─────────┼────────────────────────────────┼────────────┼───────────────┼─────────────────────┤
+│ Phase 10│ Horizontal Timeline & Roadmap  │ Layout     │ layout=timeline│ Planned (v2.1.0)    │
+│ Phase 11│ Clickable Links & References   │ Interactivity│ href=..., ref=│ Planned (v2.1.0)    │
+│ Phase 12│ Beamer Presentation Overlays   │ Presentation│ <1->, <+->    │ Planned (v2.1.0)    │
+│ Phase 13│ Tree Matrix & Grid Layout      │ Layout     │ layout=matrix │ Planned (v2.2.0)    │
 └─────────┴────────────────────────────────┴────────────┴───────────────┴─────────────────────┘
 ```
 
@@ -285,6 +290,69 @@ The **Ishikawa (Fishbone) Diagram** is a standard quality control and systems en
 
 ---
 
+### 2.10 Horizontal Timeline & Roadmap Layout (`layout=timeline`)
+
+#### 2.10.1 Motivation & Visual Paradigm
+Technical roadmaps, project schedules, and historical evolutions naturally arrange chronologically along a horizontal axis. A **Timeline Layout** anchors major milestones along a central horizontal progression bar, alternating milestone cards and task details above and below the timeline.
+
+#### 2.10.2 Syntax & Geometric Layout
+```latex
+\begin{mindchart}[layout=timeline, theme=nord]
+# Project Horizon 2026
+  - 2026-Q1: Foundation, badge=Done
+    - Architectural Blueprint
+    - Core Pipeline Prototype
+  - 2026-Q2: Alpha Preview, badge=Active
+    - Engine Optimization
+    - Benchmark Suite
+  - 2026-Q3: Public Beta, badge=Planned
+    - User Documentation
+\end{mindchart}
+```
+- Milestone nodes sit on or directly next to the central timeline axis.
+- Secondary deliverables hang as vertical sub-lists connected via orthogonal stems.
+
+---
+
+### 2.11 Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`)
+
+#### 2.11.1 Motivation & Visual Paradigm
+In electronic documents, mind maps often serve as visual tables of contents. Authors should be able to click on any node to jump to an external URL or an internal document section / figure / equation.
+
+#### 2.11.2 Integration with `hyperref`
+- `href=<url>`: Wraps the node text in `\href{url}{text}`.
+- `ref=<label>` / `target=<label>`: Links the node to an internal LaTeX anchor via `\hyperlink{label}{text}`.
+- Nodes can also define an internal label `label=<id>` automatically registered with `\hypertarget{id}{...}`.
+
+---
+
+### 2.12 Beamer Presentation Uncovering & Overlays (`<overlay>`)
+
+#### 2.12.1 Motivation & Paradigm
+In conference talks and lectures, presenters often introduce mind map branches step-by-step. Supporting Beamer overlay specifications directly on mind map nodes enables progressive revelation without manual coordinate duplication.
+
+#### 2.12.2 Syntax
+```latex
+\begin{mindchart}
+# Deep Learning Architecture
+  - Encoder Stack <1->
+    - Multi-Head Attention <2->
+    - Layer Normalization <2->
+  - Decoder Stack <3->
+    - Masked Attention <4->
+\end{mindchart}
+```
+Nodes not yet uncovered on slide $k$ can be rendered either invisible or with faded translucent styling (`opacity=0.15`).
+
+---
+
+### 2.13 Tree Matrix & Grid Layout (`layout=matrix`)
+
+#### 2.13.1 Motivation & Visual Paradigm
+For complex multi-dimensional taxonomies, such as risk assessment grids, SWOT analysis, or competitor comparisons, nodes align in a 2D matrix where Level 1 categories form row/column headers and leaves populate interior cells.
+
+---
+
 ## 3. Implementation Plan & Milestones
 
 The roadmap features are implemented iteratively following our test-driven verification workflow:
@@ -297,8 +365,14 @@ The roadmap features are implemented iteratively following our test-driven verif
 - [x] **Milestone 5**: GitHub Actions CI workflow & TDS packaging scripts.
 - [x] **Milestone Ext**: Extended color palettes (10 presets), custom theme registration (`\mindchartDefineTheme`), subtree folding (`collapsed`), and PDF bookmarks (`bookmarks=true`).
 
-### v2.0.0 Feature Pipeline *(Active)*
+### v2.0.0 Production Release *(Completed)*
 - [x] **Milestone 6 (Phase 6)**: Vertical & Org-Chart Tree Layout (`layout=down`, `layout=org`, `layout=vertical`).
 - [x] **Milestone 7 (Phase 7)**: Native Vector Icons & Symbol Indicators (`icon=...`, TikZ micro-glyphs).
 - [x] **Milestone 8 (Phase 8)**: Custom Node Geometric Shapes (`shape=diamond|hexagon|rect|capsule`).
 - [x] **Milestone 9 (Phase 9)**: Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone`).
+
+### v2.1.0 Feature Pipeline *(Planned Future Milestones)*
+- [ ] **Milestone 10 (Phase 10)**: Horizontal Timeline & Roadmap Layout (`layout=timeline`).
+- [ ] **Milestone 11 (Phase 11)**: Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`).
+- [ ] **Milestone 12 (Phase 12)**: Beamer Presentation Uncovering & Overlays (`<overlay>`).
+- [ ] **Milestone 13 (Phase 13)**: Tree Matrix & Grid Layout (`layout=matrix`).
