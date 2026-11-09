@@ -1,0 +1,57 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up TeX Live
+        uses: dante-ev/setup-texlive@v1
+        with:
+          packages: >-
+            scheme-basic
+            luatex
+            lualatex-math
+            pgf
+            xcolor
+            geometry
+            hyperref
+            luatexbase
+            ctablestack
+            iftex
+            lm
+            amsfonts
+
+      - name: Run unit test sanity check
+        run: texlua test/test_parser_md.lua
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build TDS and CTAN release packages
+        run: python scripts/build_package.py
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          files: |
+            dist/mindchart.zip
+            dist/mindchart.tds.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false

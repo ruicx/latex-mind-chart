@@ -46,6 +46,8 @@ jobs:
           lualatex -interaction=nonstopmode -output-directory=test test/test_styles.tex
           lualatex -interaction=nonstopmode -output-directory=test test/test_adv.tex
           lualatex -interaction=nonstopmode -output-directory=test test/test_markdown.tex
+          lualatex -interaction=nonstopmode -output-directory=test test/test_vertical.tex
+          lualatex -interaction=nonstopmode -output-directory=test test/test_fishbone.tex
 
       - name: Upload PDF test artifacts
         if: matrix.os == 'ubuntu-latest'
@@ -53,3 +55,32 @@ jobs:
         with:
           name: test-pdfs
           path: test/*.pdf
+
+  package-check:
+    name: Verify Packaging & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Lint and type-check packaging scripts
+        run: |
+          uvx ruff check scripts/build_package.py
+          uvx ty check scripts/build_package.py
+
+      - name: Build TDS and CTAN distribution packages
+        run: python scripts/build_package.py
+
+      - name: Upload test distribution artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-distribution-packages
+          path: dist/*.zip

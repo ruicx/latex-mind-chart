@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import shutil
 import sys
+import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -53,9 +54,17 @@ def clean_dist_directory(dist_dir: Path) -> None:
     Notes
     -----
     Ensures an idempotent and clean build environment before creating new archives.
+    Uses retries to handle transient file locks on Windows systems.
     """
     if dist_dir.exists():
-        shutil.rmtree(dist_dir)
+        for attempt in range(5):
+            try:
+                shutil.rmtree(dist_dir)
+                break
+            except OSError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.2)
     dist_dir.mkdir(parents=True, exist_ok=True)
 
 
