@@ -309,4 +309,46 @@
     - Documentation Portal, icon=bulb
 \end{mindchart}
 
+\newpage
+
+\section*{Custom Node Geometric Shapes (\texttt{shape=diamond|hexagon|rect|capsule|ellipse})}
+
+\begin{mindchart}[theme=rainbow, layout=right, style=classic, line=curve, scale=0.68]
+# System Control Architecture, shape=capsule, color=1B4F72
+  - Authentication Gate, shape=diamond, name=auth, color=E74C3C
+    - Access Token Valid?, shape=diamond, name=d1
+    - Deny Unauthorized Access, shape=card, icon=cross, status=TODO
+  - Distributed Storage Engine, shape=hexagon, name=storage, color=3498DB
+    - Sharded Partition Node, shape=hexagon
+    - In-Memory Redis Cache, shape=capsule, icon=lock
+  - Compute Execution Worker, shape=rect, name=worker, color=2ECC71
+    - Container Pod Task, shape=rect, icon=gear
+    - Minimalist Metric Stream, shape=underline
+  - Distributed State Machine, shape=ellipse, name=state, color=8E44AD
+    - Active Operational State, shape=capsule, icon=check, status=Done
+    - Failover Recovery Mode, shape=diamond
+\summary{storage}{worker}{Core Backend Infrastructure}
+\rel[bend=-35, color=E74C3C, pos=0.4]{d1}{worker}{Authorized Execution Path}
+\end{mindchart}
+
+\vspace{1cm}
+
+\section*{Balanced Map with Mixed Geometric Shapes}
+
+\begin{mindchart}[theme=sunset, layout=balanced, style=classic, line=elbow, scale=0.62]
+# Central Decision Engine, shape=capsule
+  - Input Validation, side=left, shape=diamond, color=E67E22
+    - Schema Verified?, shape=diamond
+    - Malformed Payload, shape=card, icon=warn
+  - Ingestion Buffer, side=left, shape=hexagon, color=D35400
+    - Kafka Event Stream, shape=hexagon
+    - Dead Letter Queue, shape=rect
+  - Analytics Pipeline, side=right, shape=rect, color=C0392B
+    - Batch Aggregator, shape=rect
+    - Real-time Sliding Window, shape=capsule
+  - Output Gateway, side=right, shape=ellipse, color=962D3E
+    - GraphQL Query Endpoint, shape=capsule
+    - Webhook Notification, shape=underline
+\end{mindchart}
+
 \end{document}

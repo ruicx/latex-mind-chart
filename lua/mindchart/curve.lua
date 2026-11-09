@@ -7,6 +7,17 @@ local theme = require("mindchart.theme")
 
 local curve = {}
 
+--- Checks whether a node should be treated as an underline node.
+--- @param node table|nil
+--- @return boolean
+local function is_underline(node)
+    if not node then return false end
+    if node.shape then
+        return node.shape == "underline"
+    end
+    return node.style == "underline"
+end
+
 --- Calculates the anchor point coordinates for parent exit and child entry.
 --- @param parent table
 --- @param child table
@@ -20,7 +31,7 @@ function curve.get_anchors(parent, child)
         local yc = child.y + (child.box_height / 2.0)
         local x_line_end = xc
         local y_line_end = yc
-        if child.style == "underline" then
+        if is_underline(child) then
             y_line_end = child.y - (child.box_height / 2.0)
         end
         return xp, yp, xc, yc, x_line_end, y_line_end
@@ -36,7 +47,7 @@ function curve.get_anchors(parent, child)
         xp = parent.x
     end
 
-    if parent.style == "underline" then
+    if is_underline(parent) then
         yp = parent.y - (parent.box_height / 2.0)
     else
         yp = parent.y
@@ -46,7 +57,7 @@ function curve.get_anchors(parent, child)
     local xc, yc, x_line_end, y_line_end
     if is_right then
         xc = child.x
-        if child.style == "underline" then
+        if is_underline(child) then
             yc = child.y - (child.box_height / 2.0)
             x_line_end = child.x + child.box_width
             y_line_end = yc
@@ -57,7 +68,7 @@ function curve.get_anchors(parent, child)
         end
     else
         xc = child.x + child.box_width
-        if child.style == "underline" then
+        if is_underline(child) then
             yc = child.y - (child.box_height / 2.0)
             x_line_end = child.x
             y_line_end = yc
@@ -111,14 +122,14 @@ function curve.generate_tapered_path(parent, child, line_width)
 
     if child.side == "down" then
         local yp_eff = yp
-        if parent.style ~= "underline" then
+        if not is_underline(parent) then
             yp_eff = yp + 1.5
         else
             yp_eff = yp + 0.5
         end
 
         local yc_eff = yc
-        if child.style ~= "underline" then
+        if not is_underline(child) then
             yc_eff = yc - 1.5
         end
 
@@ -139,7 +150,7 @@ function curve.generate_tapered_path(parent, child, line_width)
             xp + w0, yp_eff
         )
 
-        if child.style == "underline" then
+        if is_underline(child) then
             local underline_draw = string.format(
                 "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
                 col, end_w, child.x, child.y - (child.box_height / 2.0), child.x + child.box_width, child.y - (child.box_height / 2.0)
@@ -155,7 +166,7 @@ function curve.generate_tapered_path(parent, child, line_width)
 
     -- Overlap slightly into parent if parent has a solid filled shape (capsule, card, boxed)
     local xp_eff = xp
-    if parent.style ~= "underline" then
+    if not is_underline(parent) then
         xp_eff = xp - (sign * 1.5)
     else
         xp_eff = xp - (sign * 0.5)
@@ -163,7 +174,7 @@ function curve.generate_tapered_path(parent, child, line_width)
 
     -- Overlap slightly into child if child has a solid box/card
     local xc_eff = xc
-    if child.style ~= "underline" then
+    if not is_underline(child) then
         xc_eff = xc + (sign * 1.5)
     end
 
@@ -184,7 +195,7 @@ function curve.generate_tapered_path(parent, child, line_width)
         xp_eff, yp - w0
     )
 
-    if child.style == "underline" then
+    if is_underline(child) then
         local underline_draw = string.format(
             "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
             col, end_w, xc, yc, x_end, y_end
@@ -211,7 +222,7 @@ function curve.generate_path(parent, child, line_style, line_width)
             return curve.generate_tapered_path(parent, child, line_width)
         elseif line_style == "elbow" then
             local mid_y = (yp + yc) / 2.0
-            if child.style == "underline" then
+            if is_underline(child) then
                 local ul_y = child.y - (child.box_height / 2.0)
                 return string.format(
                     "\\draw[draw=%s, line width=%.2fpt, rounded corners=3pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
@@ -225,7 +236,7 @@ function curve.generate_path(parent, child, line_style, line_width)
                 )
             end
         elseif line_style == "straight" then
-            if child.style == "underline" then
+            if is_underline(child) then
                 local ul_y = child.y - (child.box_height / 2.0)
                 return string.format(
                     "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
@@ -243,7 +254,7 @@ function curve.generate_path(parent, child, line_style, line_width)
             local dy = yc - yp
             local c1y = yp + (dy * 0.5)
             local c2y = yc - (dy * 0.5)
-            if child.style == "underline" then
+            if is_underline(child) then
                 local ul_y = child.y - (child.box_height / 2.0)
                 return string.format(
                     "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
@@ -263,7 +274,7 @@ function curve.generate_path(parent, child, line_style, line_width)
         return curve.generate_tapered_path(parent, child, line_width)
     elseif line_style == "elbow" then
         local mid_x = (xp + xc) / 2.0
-        if child.style == "underline" then
+        if is_underline(child) then
             return string.format(
                 "\\draw[draw=%s, line width=%.2fpt, rounded corners=3pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) |- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
                 col, lw, xp, yp, mid_x, yp, xc, yc, x_end, y_end
@@ -275,7 +286,7 @@ function curve.generate_path(parent, child, line_style, line_width)
             )
         end
     elseif line_style == "straight" then
-        if child.style == "underline" then
+        if is_underline(child) then
             return string.format(
                 "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
                 col, lw, xp, yp, xc, yc, x_end, y_end
@@ -294,7 +305,7 @@ function curve.generate_path(parent, child, line_style, line_width)
         local c2x = xc - (dx * 0.5)
         local c2y = yc
 
-        if child.style == "underline" then
+        if is_underline(child) then
             return string.format(
                 "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
                 col, lw, xp, yp, c1x, c1y, c2x, c2y, xc, yc, x_end, y_end

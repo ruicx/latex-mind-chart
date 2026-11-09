@@ -21,6 +21,7 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
 - **📐 Sub-Millimeter Dimension Probing**: Queries TeX's internal box registers (`tex.box`) directly from Lua, measuring exact widths and heights of text, math formulas, and formatting macros before laying out nodes.
 - **🎨 Composable Configuration Matrix**:
   - **4 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing), Downward Organizational Chart (`layout=org` / `layout=down`).
+  - **7 Geometric Shapes**: Capsule (`capsule`/`pill`), Card (`card`), Sharp rectangle (`rect`), Diamond (`diamond`/`rhombus`), Hexagon (`hexagon`/`hex`), Ellipse (`ellipse`), Underline rule (`underline`).
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
   - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
   - **10 Curated Color Themes & Custom Palettes**: `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized`, ad-hoc inline lists (`palette={...}`), and custom defined palettes (`\mindchartDefineTheme`).

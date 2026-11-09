@@ -505,4 +505,77 @@ assert(n_sec.box_width > 50.0 + 8.0 * 2, "Box width includes icon and status tag
 
 print("Test 10 passed successfully!")
 
+-- Test 11: Custom Node Geometric Shapes
+local md_input11 = [[
+# System Control Flow, shape=capsule
+  - Authorization Decision, shape=diamond, color=E74C3C
+    - Token Valid?, shape=rhombus
+    - Fallback Strategy, shape=card
+  - Data Store Cluster, shape=hexagon, color=3498DB
+    - Sharded Partition, shape=hex
+    - Cache Layer, shape=pill
+  - Compute Worker, shape=rect, color=2ECC71
+    - Container Pod, shape=rectangle
+    - Raw Metric Node, shape=underline
+]]
+
+local root11 = parser.parse_markdown(md_input11)
+assert(root11 ~= nil, "Root 11 should not be nil")
+assert_eq(root11.options.shape, "capsule", "Root shape option")
+
+local auth_node = root11.children[1]
+local data_node = root11.children[2]
+local worker_node = root11.children[3]
+
+assert_eq(auth_node.options.shape, "diamond", "Auth node shape option")
+assert_eq(data_node.options.shape, "hexagon", "Data node shape option")
+assert_eq(worker_node.options.shape, "rect", "Worker node shape option")
+
+-- Test shape normalization
+assert_eq(theme.normalize_shape("rhombus"), "diamond", "rhombus normalizes to diamond")
+assert_eq(theme.normalize_shape("hex"), "hexagon", "hex normalizes to hexagon")
+assert_eq(theme.normalize_shape("pill"), "capsule", "pill normalizes to capsule")
+assert_eq(theme.normalize_shape("rectangle"), "rect", "rectangle normalizes to rect")
+assert_eq(theme.normalize_shape("rounded_rect"), "card", "rounded_rect normalizes to card")
+
+-- Mock dimensions and apply theme
+mock_dims(root11)
+theme.apply(root11, { theme = "rainbow", style = "classic" })
+
+assert_eq(root11.shape, "capsule", "Root shape is capsule")
+assert_eq(auth_node.shape, "diamond", "Auth shape is diamond")
+assert_eq(auth_node.children[1].shape, "diamond", "Child shape normalized to diamond")
+assert_eq(auth_node.children[2].shape, "card", "Child shape is card")
+assert_eq(data_node.shape, "hexagon", "Data shape is hexagon")
+assert_eq(data_node.children[1].shape, "hexagon", "Child shape normalized to hexagon")
+assert_eq(data_node.children[2].shape, "capsule", "Child shape normalized to capsule")
+assert_eq(worker_node.shape, "rect", "Worker shape is rect")
+assert_eq(worker_node.children[1].shape, "rect", "Child shape normalized to rect")
+assert_eq(worker_node.children[2].shape, "underline", "Child shape is underline")
+
+-- Compute layout and verify box dimensions
+layout.compute(root11, { layout = "right" })
+
+-- Diamond should have extra padding/expansion to prevent text clipping
+assert(auth_node.box_width > auth_node.width * 1.5, "Diamond box width expanded for diagonal boundary")
+assert(auth_node.box_height >= 22.0, "Diamond box height has minimum height")
+
+-- Hexagon should have dx point cap allowance
+assert(data_node.box_width >= data_node.width + 2 * 16.0, "Hexagon box width includes side tips")
+
+-- Anchor points check
+local xp11, yp11, xc11, yc11, xe11, ye11 = curve.get_anchors(root11, auth_node)
+assert_eq(xp11, root11.x + root11.box_width, "Parent exit anchor X is right edge")
+assert_eq(yp11, root11.y, "Parent exit anchor Y is center")
+assert_eq(xc11, auth_node.x, "Child entry anchor X is left tip of diamond")
+assert_eq(yc11, auth_node.y, "Child entry anchor Y is center tip of diamond")
+
+-- Underline leaf anchor check
+local leaf_ul = worker_node.children[2]
+local _, _, xc_ul, yc_ul, xe_ul, ye_ul = curve.get_anchors(worker_node, leaf_ul)
+assert_eq(yc_ul, leaf_ul.y - (leaf_ul.box_height / 2.0), "Underline child attaches at bottom baseline")
+assert_eq(xe_ul, leaf_ul.x + leaf_ul.box_width, "Underline line spans across width")
+
+print("Test 11 passed successfully!")
+
 print("ALL PARSER UNIT TESTS PASSED!")

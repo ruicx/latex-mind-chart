@@ -373,6 +373,42 @@ In multi-tier or complex mind maps, authors can fold secondary branches to prese
 - `icon_color=<color>`: Overrides the icon's primary foreground or badge color (inherits branch color by default).
 - **LaTeX Macro Fallback**: If `icon` is specified as a LaTeX macro (e.g. `icon=\faStar` or `icon=\ding{51}`), `mindchart` automatically measures the macro dimensions in a TeX box and renders it natively inside the node.
 
+### 3.8 Custom Node Geometric Shapes (`shape=...`)
+
+`mindchart` allows assigning explicit geometric shapes to individual topics or globally to the entire map:
+
+```latex
+\begin{mindchart}[theme=rainbow, layout=right, style=classic]
+# System Control Flow, shape=capsule
+  - Authorization Gateway, shape=diamond, color=E74C3C
+    - Access Token Valid?, shape=diamond
+    - Deny Request, shape=card, icon=cross
+  - Storage Subsystem, shape=hexagon, color=3498DB
+    - Sharded Shard Cluster, shape=hexagon
+    - In-Memory Cache, shape=capsule, icon=lock
+  - Compute Execution, shape=rect, color=2ECC71
+    - Container Pod, shape=rect, icon=gear
+    - Minimal Metric, shape=underline
+  - Distributed State, shape=ellipse, color=9B59B6
+    - Active Operational State, shape=capsule, icon=check
+    - Failover Recovery Mode, shape=diamond
+\end{mindchart}
+```
+
+#### Supported Geometric Shapes:
+| Shape Option | Aliases | Description & Visual Form |
+| :--- | :--- | :--- |
+| `card` | `rounded_rect` | Modern rounded rectangle with 4pt rounded corners and theme border. |
+| `capsule` | `pill`, `rounded` | Fully rounded pill container with semi-circular 180° ends. |
+| `rect` | `rectangle`, `box` | Crisp sharp-cornered rectangle (`sharp corners`). |
+| `diamond` | `rhombus` | 4-point diamond with automatic diagonal margin expansion and safety aspect scaling. |
+| `hexagon` | `hex` | 6-point horizontal polygon with flat top/bottom and pointed left/right vertices. |
+| `ellipse` | `oval`, `circle` | Smooth geometric ellipse circumscribing inner topic text. |
+| `underline` | `line` | Minimalist horizontal baseline rule without outer box container. |
+
+- **Global Configuration**: Set default shape for all nodes via `\begin{mindchart}[shape=rect]`.
+- **Automatic Anchor Geometry**: Connectors, elbow buses, and relationship arrows attach precisely to the apex tip of diamonds and hexagons without clipping or piercing node labels.
+
 ---
 
 ## 4. Overlay Elements

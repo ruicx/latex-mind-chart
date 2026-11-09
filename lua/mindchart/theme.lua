@@ -159,6 +159,30 @@ function theme.define_theme(name, spec)
     end
 end
 
+--- Normalizes a geometric shape string name.
+--- @param raw any
+--- @return string|nil
+function theme.normalize_shape(raw)
+    if not raw then return nil end
+    raw = tostring(raw):lower():match("^%s*(.-)%s*$")
+    if raw == "diamond" or raw == "rhombus" then
+        return "diamond"
+    elseif raw == "hexagon" or raw == "hex" then
+        return "hexagon"
+    elseif raw == "capsule" or raw == "pill" or raw == "rounded" then
+        return "capsule"
+    elseif raw == "rect" or raw == "rectangle" or raw == "box" then
+        return "rect"
+    elseif raw == "card" or raw == "rounded_rect" then
+        return "card"
+    elseif raw == "underline" or raw == "line" then
+        return "underline"
+    elseif raw == "ellipse" or raw == "oval" or raw == "circle" then
+        return "ellipse"
+    end
+    return raw
+end
+
 --- Resolves and assigns colors and styles across all nodes in the tree.
 --- @param root table The AST root node.
 --- @param options table Global options (e.g. { theme="rainbow", style="classic" })
@@ -167,6 +191,7 @@ function theme.apply(root, options)
     local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
     local theme_name = options.theme or "rainbow"
     local style_name = options.style or "classic"
+    local global_shape = theme.normalize_shape(options.shape)
 
     local palette
     local root_color = "#2C3E50"
@@ -200,6 +225,7 @@ function theme.apply(root, options)
     -- Assign root attributes
     root.color = root.options.color or root_color
     root.style = root.options.style or (style_name == "underline" and "capsule" or "capsule")
+    root.shape = theme.normalize_shape(root.options.shape or global_shape) or "capsule"
 
     -- Assign Level 1 colors and propagate
     local l1_index = 0
@@ -220,6 +246,18 @@ function theme.apply(root, options)
             end
         end
 
+        local l1_shape = theme.normalize_shape(l1_node.options.shape or global_shape)
+        if l1_shape then
+            l1_node.shape = l1_shape
+            if l1_shape ~= "underline" and not l1_node.options.style then
+                l1_node.style = "card"
+            elseif l1_shape == "underline" then
+                l1_node.style = "underline"
+            end
+        else
+            l1_node.shape = (l1_node.style == "underline" and "underline" or "card")
+        end
+
         -- Propagate color to descendants
         local function propagate(node, parent_color)
             for _, child in ipairs(node.children) do
@@ -234,6 +272,19 @@ function theme.apply(root, options)
                         child.style = "underline"
                     end
                 end
+
+                local c_shape = theme.normalize_shape(child.options.shape or global_shape)
+                if c_shape then
+                    child.shape = c_shape
+                    if c_shape ~= "underline" and not child.options.style then
+                        child.style = (style_name == "boxed" or is_vertical) and "boxed" or "card"
+                    elseif c_shape == "underline" then
+                        child.style = "underline"
+                    end
+                else
+                    child.shape = (child.style == "underline" and "underline" or (child.style == "capsule" and "capsule" or "card"))
+                end
+
                 propagate(child, child.color)
             end
         end
@@ -247,6 +298,7 @@ function theme.apply(root, options)
         local base_color = (from_node and from_node.color) or root_color
         s.node.color = s.options.color or base_color
         s.node.style = s.options.style or "card"
+        s.node.shape = theme.normalize_shape(s.options.shape or s.node.options.shape or global_shape) or "card"
     end
 
     -- Style boundary nodes
@@ -257,6 +309,7 @@ function theme.apply(root, options)
         if b.node then
             b.node.color = b.color
             b.node.style = "badge"
+            b.node.shape = "badge"
         end
     end
 

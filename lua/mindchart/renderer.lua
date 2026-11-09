@@ -53,10 +53,12 @@ local function render_node(node, options)
     local cy = node.y
     local col_tikz = to_tikz_color(node.color or "#2C3E50")
 
+    local sh = node.shape or (node.style == "underline" and "underline" or (node.depth == 0 and "capsule" or "card"))
+
     -- Determine alignment
     local al = node.options.align or (options and options.align)
     if not al then
-        if node.style == "underline" then
+        if sh == "underline" or node.style == "underline" then
             al = (node.side == "left" and "right" or "left")
         else
             al = "center"
@@ -73,36 +75,77 @@ local function render_node(node, options)
         end
     end
 
+    -- Determine fill / stroke mode
+    local is_solid = (node.depth == 0 and node.options.fill ~= "none" and node.options.fill ~= "white")
+                     or (node.options.fill == "solid" or node.options.fill == true)
+
+    local style_str = ""
+    local text_col = "{rgb,255:red,44;green,62;blue,80}"
+    local font_str = (node.depth == 0 or node.depth == 1 or node.style == "card" or is_solid) and ", font=\\bfseries" or ""
+
+    if is_solid then
+        style_str = string.format("fill=%s", col_tikz)
+        text_col = "white"
+        font_str = ", font=\\bfseries"
+    else
+        local lw = (node.style == "boxed") and "0.8pt" or "1.0pt"
+        style_str = string.format("draw=%s, line width=%s, fill=white", col_tikz, lw)
+    end
+
+    -- Determine shape option in TikZ
+    local shape_opt = "rounded corners=4pt"
+    if sh == "capsule" then
+        shape_opt = "rounded rectangle, rounded rectangle arc length=180"
+    elseif sh == "card" then
+        local rc = (node.style == "boxed") and "3pt" or "4pt"
+        shape_opt = string.format("rounded corners=%s", rc)
+    elseif sh == "rect" then
+        shape_opt = "sharp corners"
+    elseif sh == "diamond" then
+        local aspect = math.max(1.0, math.min(3.5, node.box_width / math.max(1.0, node.box_height)))
+        shape_opt = string.format("diamond, aspect=%.2f", aspect)
+    elseif sh == "ellipse" then
+        shape_opt = "ellipse"
+    elseif sh == "badge" then
+        shape_opt = "rounded corners=3pt"
+    end
+
     local has_badge = (node.badge_obj and node.badge_obj.width ~= nil)
     local has_tags = (node.tag_objs and #node.tag_objs > 0)
     local has_icon = (node.icon_obj ~= nil)
 
     if not has_badge and not has_tags and not has_icon then
-        if node.style == "capsule" or node.depth == 0 then
-            -- Root / Capsule: Solid fill, high contrast white text, bold
-            return string.format(
-                "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, text=white, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-            )
-        elseif node.style == "card" then
-            -- Level 1 Card: Rounded box with colored border and white background
-            return string.format(
-                "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, text={rgb,255:red,44;green,62;blue,80}, font=\\bfseries, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-            )
-        elseif node.style == "boxed" then
-            -- Boxed: Clean thin border card
-            return string.format(
-                "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, text={rgb,255:red,44;green,62;blue,80}, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, col_tikz, node.box_width, node.box_height, extra_opts, cx, cy, node.text
-            )
-        else
+        if sh == "underline" then
             -- Underline style: Text sits directly on top of the underline
             local tx = node.x + node.pad_x + (node.width / 2.0)
             local ty = node.y
             return string.format(
-                "\\node (mc_node_%d) [anchor=center, text={rgb,255:red,44;green,62;blue,80}, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, extra_opts, tx, ty, node.text
+                "\\node (mc_node_%d) [anchor=center, text=%s%s, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, text_col, font_str, extra_opts, tx, ty, node.text
+            )
+        elseif sh == "hexagon" then
+            local hw = node.box_width / 2.0
+            local hh = node.box_height / 2.0
+            local dx = math.min(10.0, hh)
+            local hex_path = string.format(
+                "\\filldraw[%s] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- cycle;",
+                style_str,
+                cx - hw + dx, cy + hh,
+                cx + hw - dx, cy + hh,
+                cx + hw, cy,
+                cx + hw - dx, cy - hh,
+                cx - hw + dx, cy - hh,
+                cx - hw, cy
+            )
+            local node_cmd = string.format(
+                "\\node (mc_node_%d) [text=%s%s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+            )
+            return hex_path .. " " .. node_cmd
+        else
+            return string.format(
+                "\\node (mc_node_%d) [%s, %s, text=%s%s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
+                node.id, shape_opt, style_str, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, node.text
             )
         end
     end
@@ -111,25 +154,33 @@ local function render_node(node, options)
     local parts = {}
 
     -- 1. Container shape (named mc_node_<id> for relationship anchors)
-    if node.style == "capsule" or node.depth == 0 then
-        table.insert(parts, string.format(
-            "\\node (mc_node_%d) [fill=%s, rounded corners=6pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy
-        ))
-    elseif node.style == "card" then
-        table.insert(parts, string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=1.2pt, fill=white, rounded corners=4pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy
-        ))
-    elseif node.style == "boxed" then
-        table.insert(parts, string.format(
-            "\\node (mc_node_%d) [draw=%s, line width=0.8pt, fill=white, rounded corners=3pt, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
-            node.id, col_tikz, node.box_width, node.box_height, cx, cy
-        ))
-    else
+    if sh == "underline" then
         table.insert(parts, string.format(
             "\\node (mc_node_%d) [anchor=center, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
             node.id, node.box_width, node.box_height, cx, cy
+        ))
+    elseif sh == "hexagon" then
+        local hw = node.box_width / 2.0
+        local hh = node.box_height / 2.0
+        local dx = math.min(10.0, hh)
+        table.insert(parts, string.format(
+            "\\filldraw[%s] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- cycle;",
+            style_str,
+            cx - hw + dx, cy + hh,
+            cx + hw - dx, cy + hh,
+            cx + hw, cy,
+            cx + hw - dx, cy - hh,
+            cx - hw + dx, cy - hh,
+            cx - hw, cy
+        ))
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, node.box_width, node.box_height, cx, cy
+        ))
+    else
+        table.insert(parts, string.format(
+            "\\node (mc_node_%d) [%s, %s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt] at (%.2fpt, %.2fpt) {};",
+            node.id, shape_opt, style_str, node.box_width, node.box_height, cx, cy
         ))
     end
 
@@ -165,18 +216,9 @@ local function render_node(node, options)
     end
 
     -- 3. Main Text
-    local text_font = ""
-    local text_col = "{rgb,255:red,44;green,62;blue,80}"
-    if node.style == "capsule" or node.depth == 0 then
-        text_col = "white"
-        text_font = ", font=\\bfseries"
-    elseif node.style == "card" then
-        text_font = ", font=\\bfseries"
-    end
-
     table.insert(parts, string.format(
         "\\node [anchor=west, text=%s%s, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-        text_col, text_font, extra_opts, x_cur, cy, node.text
+        text_col, font_str, extra_opts, x_cur, cy, node.text
     ))
     x_cur = x_cur + node.width
 

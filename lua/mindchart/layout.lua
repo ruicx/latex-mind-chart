@@ -23,12 +23,20 @@ local DEFAULT_CONFIG = {
 --- @param node table
 --- @param cfg table
 local function compute_node_box(node, cfg)
+    local sh = node.shape or (node.style == "underline" and "underline" or (node.depth == 0 and "capsule" or "card"))
+
     local px, py = cfg.pad_x_line, cfg.pad_y_line
-    if node.style == "capsule" or node.depth == 0 then
+    if sh == "capsule" then
         px, py = cfg.pad_x_capsule, cfg.pad_y_capsule
-    elseif node.style == "card" or node.style == "boxed" then
+    elseif sh == "card" or sh == "rect" or node.style == "boxed" then
         px, py = cfg.pad_x_card, cfg.pad_y_card
-    elseif node.style == "badge" then
+    elseif sh == "diamond" then
+        px, py = 16.0, 7.0
+    elseif sh == "hexagon" then
+        px, py = 16.0, 5.0
+    elseif sh == "ellipse" then
+        px, py = 14.0, 6.0
+    elseif node.style == "badge" or sh == "badge" then
         px, py = 5.0, 3.0
     end
 
@@ -87,10 +95,37 @@ local function compute_node_box(node, cfg)
         end
     end
 
-    node.pad_x = px
-    node.pad_y = py
-    node.box_width = node.width + extra_w + 2 * px
-    node.box_height = max_h + 2 * py
+    local content_w = node.width + extra_w
+    local content_h = max_h
+
+    if sh == "diamond" then
+        local bw = content_w * 1.5 + 2 * px
+        local bh = content_h * 1.4 + 2 * py
+        node.box_width = math.max(bw, bh * 1.6)
+        node.box_height = math.max(bh, 22.0)
+        node.pad_x = (node.box_width - content_w) / 2.0
+        node.pad_y = (node.box_height - content_h) / 2.0
+    elseif sh == "hexagon" then
+        local dx = math.min(10.0, (content_h + 2 * py) / 2.0)
+        local bw = content_w + 2 * px + 2 * dx
+        local bh = content_h + 2 * py
+        node.box_width = bw
+        node.box_height = math.max(bh, 20.0)
+        node.pad_x = (node.box_width - content_w) / 2.0
+        node.pad_y = (node.box_height - content_h) / 2.0
+    elseif sh == "ellipse" then
+        local bw = content_w * 1.35 + 2 * px
+        local bh = content_h * 1.35 + 2 * py
+        node.box_width = bw
+        node.box_height = math.max(bh, 20.0)
+        node.pad_x = (node.box_width - content_w) / 2.0
+        node.pad_y = (node.box_height - content_h) / 2.0
+    else
+        node.pad_x = px
+        node.pad_y = py
+        node.box_width = content_w + 2 * px
+        node.box_height = content_h + 2 * py
+    end
 end
 
 --- Recursively computes the subtree bounding height for all nodes.
