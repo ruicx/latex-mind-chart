@@ -1,6 +1,6 @@
 # `mindchart` — Modern XMind-Style Mind Maps for LaTeX
 
-[![CI](https://github.com/latex-mindchart/mindchart/actions/workflows/ci.yml/badge.svg)](https://github.com/latex-mindchart/mindchart/actions/workflows/ci.yml)
+[![CI](https://github.com/ruicx/latex-mind-chart/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ruicx/latex-mind-chart/actions/workflows/ci.yml)
 [![Engine: LuaLaTeX](https://img.shields.io/badge/Engine-LuaLaTeX-blue.svg)](https://www.luatex.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Architecture: Lua + TikZ](https://img.shields.io/badge/Architecture-Lua%20%2B%20TikZ-orange.svg)](docs/design.md)
