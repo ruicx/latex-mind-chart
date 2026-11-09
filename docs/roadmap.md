@@ -223,7 +223,7 @@ While horizontal mind maps excel at expansive technical hierarchies and widescre
 
 ---
 
-### 2.7 Native Vector Icons & Symbol Indicators (`icon=...`)
+### 2.7 Native Vector Icons & Symbol Indicators (`icon=...`) *(Completed in v2.0.0)*
 
 #### 2.7.1 Motivation & Problem Statement
 Users frequently use visual icons to denote status, warnings, highlights, and categories (e.g. checkmarks, stars, flags, caution signs). Relying on external icon fonts (like `fontawesome5`) introduces extra package dependencies that may not always be available or may conflict with certain font configurations.
@@ -299,6 +299,6 @@ The roadmap features are implemented iteratively following our test-driven verif
 
 ### v2.0.0 Feature Pipeline *(Active)*
 - [x] **Milestone 6 (Phase 6)**: Vertical & Org-Chart Tree Layout (`layout=down`, `layout=org`, `layout=vertical`).
-- [ ] **Milestone 7 (Phase 7)**: Native Vector Icons & Symbol Indicators (`icon=...`, TikZ micro-glyphs).
+- [x] **Milestone 7 (Phase 7)**: Native Vector Icons & Symbol Indicators (`icon=...`, TikZ micro-glyphs).
 - [ ] **Milestone 8 (Phase 8)**: Custom Node Geometric Shapes (`shape=diamond|hexagon|rect|capsule`).
 - [ ] **Milestone 9 (Phase 9)**: Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone`).

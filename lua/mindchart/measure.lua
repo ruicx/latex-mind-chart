@@ -35,6 +35,9 @@ function measure.init(root, options)
         if node.badge_obj then
             node_map[node.badge_obj.id] = node.badge_obj
         end
+        if node.icon_obj and node.icon_obj.is_macro then
+            node_map[node.icon_obj.id] = node.icon_obj
+        end
         if node.tag_objs then
             for _, tag in ipairs(node.tag_objs) do
                 node_map[tag.id] = tag
@@ -98,6 +101,11 @@ function measure.emit_measurement_commands(options)
         -- Measure badge if present
         if node.badge_obj and node.badge_obj.text ~= "" then
             tex.print(string.format("\\mindchartMeasureItem{%d}{{\\scriptsize\\bfseries %s}}", node.badge_obj.id, node.badge_obj.text))
+        end
+
+        -- Measure icon if present and is a macro
+        if node.icon_obj and node.icon_obj.is_macro and node.icon_obj.raw ~= "" then
+            tex.print(string.format("\\mindchartMeasureItem{%d}{%s}", node.icon_obj.id, node.icon_obj.raw))
         end
 
         -- Measure tags if present

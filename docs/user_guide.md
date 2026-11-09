@@ -332,6 +332,47 @@ In multi-tier or complex mind maps, authors can fold secondary branches to prese
 - **Bi-Directional Support**: Fold indicators dock cleanly on the right side of right-growing branches and on the left side of left-growing branches across all visual styles (`classic`, `card`, `boxed`, `underline`).
 - **Fold Indicator Style**: `fold_style=count` *(Default)* displays `+N` with the descendant count; `fold_style=plus` displays `+`.
 
+### 3.7 Native Vector Icons & Symbol Indicators (`icon`, `symbol`)
+
+`mindchart` includes a zero-dependency, pure TikZ vector micro-glyph engine for adorning topic nodes with rich status, warning, category, and highlight icons without requiring external icon font packages (such as `fontawesome5`):
+
+```latex
+\begin{mindchart}[theme=rainbow, style=classic]
+# Sprint Management
+  - Security Infrastructure, icon=lock, color=27AE60
+    - SSL Certificate Renewal, icon=check
+    - Penetration Testing, icon=fire, icon_color=E74C3C
+  - Performance Optimization, icon=gear, color=3498DB
+    - Memory Leak Profiling, icon=warn
+    - Database Query Caching, icon=star, icon_color=F1C40F
+  - Product Roadmap, icon=bulb, color=9B59B6
+    - Mobile App Redesign, icon=heart
+    - API Documentation, icon=info
+\end{mindchart}
+```
+
+#### Supported Native Micro-Icons:
+| Icon Name | Description & Visual Glyph |
+| :--- | :--- |
+| `check` | Emerald circled white vector checkmark. |
+| `cross` | Red circled white cross indicator. |
+| `star` | Golden 5-pointed vector star. |
+| `flag` | Crimson flagpole with pennant. |
+| `warn` | Amber warning triangle with exclamation mark. |
+| `info` | Cerulean circled informational 'i'. |
+| `fire` | Fiery orange two-segment Bézier flame. |
+| `bulb` | Golden lightbulb / idea indicator. |
+| `heart` | Crimson heart favorite glyph. |
+| `lock` | Slate security padlock with shackle. |
+| `gear` | Industrial multi-tooth cogwheel. |
+| `circle` | Filled circular status dot. |
+
+#### Icon Configuration Options:
+- `icon=<name>` or `symbol=<name>`: Specifies the icon name from the table above.
+- `icon_pos=prefix|suffix` (default: `prefix`): Positions the icon before the text/badge or at the end of the node container.
+- `icon_color=<color>`: Overrides the icon's primary foreground or badge color (inherits branch color by default).
+- **LaTeX Macro Fallback**: If `icon` is specified as a LaTeX macro (e.g. `icon=\faStar` or `icon=\ding{51}`), `mindchart` automatically measures the macro dimensions in a TeX box and renders it natively inside the node.
+
 ---
 
 ## 4. Overlay Elements

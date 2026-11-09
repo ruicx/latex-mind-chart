@@ -42,6 +42,26 @@ function ast.init_badges_and_tags(node)
         }
     end
 
+    -- Process icon options: icon=<name>, icon_color=<color>, icon_pos=<prefix|suffix>
+    local icon_val = options.icon or options.symbol
+    if icon_val and tostring(icon_val) ~= "" and not node.icon_obj then
+        local raw_icon = tostring(icon_val):match("^%s*(.-)%s*$")
+        if raw_icon ~= "" then
+            local is_macro = (raw_icon:sub(1, 1) == "\\")
+            node.icon_obj = {
+                id = ast.next_id(),
+                name = raw_icon:lower(),
+                raw = raw_icon,
+                is_macro = is_macro,
+                pos = options.icon_pos or "prefix",
+                color = options.icon_color,
+                box_width = 11.0,
+                box_height = 11.0,
+                gap = 5.0,
+            }
+        end
+    end
+
     -- Process tag options
     local raw_tag = options.tag or options.tags
     local tag_list = {}

@@ -24,7 +24,8 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
   - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
   - **10 Curated Color Themes & Custom Palettes**: `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized`, ad-hoc inline lists (`palette={...}`), and custom defined palettes (`\mindchartDefineTheme`).
-- **✨ Overlays & Annotations**:
+- **✨ Overlays, Annotations & Micro-Icons**:
+  - **Native Vector Micro-Icons**: Zero-dependency TikZ micro-glyphs (`icon=check|star|warn|fire|bulb|lock|...`) and LaTeX macro fallbacks.
   - **Summary Brackets (`\summary`)**: Mathematical cubic Bézier curly brackets encompassing entire subtrees with dedicated summary topic cards.
   - **Cross-Branch Relationships (`\rel`)**: Curved dashed connection arrows with automatic node boundary clipping, configurable curve angles, and text annotation badges.
   - **Subtree Folding & Indicators**: Collapse busy subtrees with `collapsed` / `folded` and render neat `+N` badge indicators.

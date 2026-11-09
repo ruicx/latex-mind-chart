@@ -6,6 +6,7 @@
 local ast = require("mindchart.ast")
 local curve = require("mindchart.curve")
 local theme = require("mindchart.theme")
+local icon = require("mindchart.icon")
 
 local renderer = {}
 
@@ -74,8 +75,9 @@ local function render_node(node, options)
 
     local has_badge = (node.badge_obj and node.badge_obj.width ~= nil)
     local has_tags = (node.tag_objs and #node.tag_objs > 0)
+    local has_icon = (node.icon_obj ~= nil)
 
-    if not has_badge and not has_tags then
+    if not has_badge and not has_tags and not has_icon then
         if node.style == "capsule" or node.depth == 0 then
             -- Root / Capsule: Solid fill, high contrast white text, bold
             return string.format(
@@ -153,6 +155,15 @@ local function render_node(node, options)
         x_cur = x_cur + b.box_width + b.gap
     end
 
+    -- 2.5 Prefix Icon
+    if has_icon and node.icon_obj.pos ~= "suffix" then
+        local ico = node.icon_obj
+        local ix = x_cur + (ico.box_width / 2.0)
+        local ico_cmd = icon.render(ico, ix, cy, node.color)
+        table.insert(parts, ico_cmd)
+        x_cur = x_cur + ico.box_width + ico.gap
+    end
+
     -- 3. Main Text
     local text_font = ""
     local text_col = "{rgb,255:red,44;green,62;blue,80}"
@@ -168,6 +179,16 @@ local function render_node(node, options)
         text_col, text_font, extra_opts, x_cur, cy, node.text
     ))
     x_cur = x_cur + node.width
+
+    -- 3.5 Suffix Icon
+    if has_icon and node.icon_obj.pos == "suffix" then
+        local ico = node.icon_obj
+        x_cur = x_cur + ico.gap
+        local ix = x_cur + (ico.box_width / 2.0)
+        local ico_cmd = icon.render(ico, ix, cy, node.color)
+        table.insert(parts, ico_cmd)
+        x_cur = x_cur + ico.box_width
+    end
 
     -- 4. Tags (trailing)
     if has_tags then

@@ -52,6 +52,22 @@ local function compute_node_box(node, cfg)
         max_h = math.max(max_h, bh)
     end
 
+    -- Compute icon box metrics if present
+    if node.icon_obj then
+        local ico = node.icon_obj
+        local iw = 10.5
+        local ih = 10.5
+        if ico.is_macro and ico.width and ico.width > 0 then
+            iw = ico.width
+            ih = ico.height + ico.depth_pt
+        end
+        ico.box_width = iw
+        ico.box_height = ih
+        ico.gap = 4.5
+        extra_w = extra_w + iw + ico.gap
+        max_h = math.max(max_h, ih)
+    end
+
     -- Compute tags box metrics if present
     if node.tag_objs and #node.tag_objs > 0 then
         local tags_w = 0.0
