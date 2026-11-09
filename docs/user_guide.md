@@ -55,6 +55,7 @@ Options can be supplied as comma-separated key-value pairs in the environment ar
 | `balanced` | Bi-directional balanced mind map (automatically splits Level 1 branches left & right). | No |
 | `left` | Logic chart growing strictly to the left. | No |
 | `org` / `down` / `vertical` | Organizational Chart / Downward Tree (root centered at top, branches descending downwards with orthogonal elbow bus lines). | No |
+| `fishbone` / `ishikawa` | Ishikawa Cause-and-Effect / Fishbone diagram (head on the right, bold central spine, alternating 60° diagonal ribs, horizontal cause branches). | No |
 
 ### 2.2 Visual Styles (`style = <name>`)
 
@@ -408,6 +409,35 @@ In multi-tier or complex mind maps, authors can fold secondary branches to prese
 
 - **Global Configuration**: Set default shape for all nodes via `\begin{mindchart}[shape=rect]`.
 - **Automatic Anchor Geometry**: Connectors, elbow buses, and relationship arrows attach precisely to the apex tip of diamonds and hexagons without clipping or piercing node labels.
+
+### 3.9 Fishbone / Cause-and-Effect Diagrams (`layout=fishbone` / `layout=ishikawa`)
+
+`mindchart` includes native support for Ishikawa (fishbone) root-cause analysis diagrams:
+
+```latex
+\begin{mindchart}[theme=rainbow, layout=fishbone, style=classic]
+# Website High Latency, color=C0392B
+  - Server Hardware, color=2980B9, icon=gear
+    - High CPU Utilization, badge=P0
+    - Insufficient RAM Buffer
+    - Disk I/O Throttling
+  - Network Gateway, color=27AE60, icon=flag
+    - DNS Resolution Timeout
+    - BGP Route Flapping
+  - Application Code, color=E67E22, icon=fire
+    - Synchronous Remote Call, badge=P0
+    - Unindexed SQL Query, status=WIP
+  - Database Cluster, color=8E44AD, icon=lock
+    - Connection Pool Exhaustion
+    - Row-Level Lock Contention
+\end{mindchart}
+```
+
+#### Geometry & Alignment:
+- **Central Spine**: A bold horizontal line runs along $Y = 0$, terminating in a prominent vector arrowhead pointing rightwards into the Problem / Effect head node.
+- **Alternating Category Ribs**: Level 1 branches alternate above and below the spine, angling at an exact $60^\circ$ diagonal pitch pointing towards the head.
+- **Horizontal Cause Attachments**: Level 2 causes branch horizontally to the left of their respective rib, perfectly aligning with either underline rules (`style=classic`) or enclosed cards (`style=boxed`).
+- **Category Placement Overrides**: Force a category to the top or bottom using `side=top` or `side=bottom`.
 
 ---
 

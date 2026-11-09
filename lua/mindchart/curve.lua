@@ -213,9 +213,37 @@ end
 --- @param line_width number Line width in pt
 --- @return string TikZ draw command
 function curve.generate_path(parent, child, line_style, line_width)
-    local xp, yp, xc, yc, x_end, y_end = curve.get_anchors(parent, child)
     local col = theme.to_tikz_color(child.color or "#2C3E50")
     local lw = line_width or 1.2
+
+    if child.is_fishbone then
+        if child.joint_x and child.rib_start_x then
+            -- Category Rib connecting to spine
+            return string.format(
+                "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                col, lw * 1.35,
+                child.rib_start_x, child.rib_start_y,
+                child.joint_x, child.joint_y
+            )
+        elseif child.attach_x then
+            -- Cause branch connecting horizontally to the rib
+            if is_underline(child) then
+                local ul_y = child.y - (child.box_height / 2.0)
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, child.x + child.box_width, ul_y, child.attach_x, ul_y,
+                    col, lw, child.x, ul_y, child.x + child.box_width, ul_y
+                )
+            else
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, child.x + child.box_width, child.y, child.attach_x, child.y
+                )
+            end
+        end
+    end
+
+    local xp, yp, xc, yc, x_end, y_end = curve.get_anchors(parent, child)
 
     if child.side == "down" then
         if line_style == "tapered" or line_style == "organic" then

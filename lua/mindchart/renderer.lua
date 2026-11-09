@@ -485,6 +485,14 @@ function renderer.render(root, options)
     end
 
     -- Pass 1: Draw all connection curves (visible nodes only)
+    if root.is_fishbone then
+        local root_col = to_tikz_color(root.color or "#2C3E50")
+        tex.print(string.format(
+            "\\draw[draw=%s, line width=2.4pt, ->, >=stealth] (%.2fpt, 0pt) -- (%.2fpt, 0pt);",
+            root_col, root.spine_start_x or 0.0, root.spine_end_x or root.x
+        ))
+    end
+
     ast.traverse_visible(root, function(node, parent)
         if parent then
             local effective_line = node.options.line or line_style

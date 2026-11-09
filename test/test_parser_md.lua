@@ -578,4 +578,67 @@ assert_eq(xe_ul, leaf_ul.x + leaf_ul.box_width, "Underline line spans across wid
 
 print("Test 11 passed successfully!")
 
+-- Test 12: Fishbone / Ishikawa Cause-and-Effect Diagram Layout
+local md_input12 = [[
+# High Server Latency, color=E74C3C
+  - Hardware Capacity, color=3498DB
+    - High CPU Load
+    - Low RAM
+  - Network Gateway, color=2ECC71
+    - DNS Lookup Delay
+    - Packet Dropped
+  - Software Engine, color=E67E22
+    - Lock Contention
+    - Thread Pool Starved
+  - Database System, color=9B59B6
+    - Slow Query
+    - Missing Index
+]]
+
+local root12 = parser.parse_markdown(md_input12)
+assert(root12 ~= nil, "Root 12 should not be nil")
+assert_eq(#root12.children, 4, "Root 12 has 4 categories")
+
+mock_dims(root12)
+theme.apply(root12, { layout = "fishbone", theme = "rainbow" })
+
+assert(root12.is_fishbone == true, "Root is_fishbone flag is set")
+
+layout.compute(root12, { layout = "fishbone" })
+
+-- Check alternating category placement
+local c1 = root12.children[1]
+local c2 = root12.children[2]
+local c3 = root12.children[3]
+local c4 = root12.children[4]
+
+assert_eq(c1.side, "top", "Category 1 placed on top")
+assert_eq(c2.side, "bottom", "Category 2 placed on bottom")
+assert_eq(c3.side, "top", "Category 3 placed on top")
+assert_eq(c4.side, "bottom", "Category 4 placed on bottom")
+
+assert(c1.y > 0, "Top category Y is above spine")
+assert(c2.y < 0, "Bottom category Y is below spine")
+assert(c3.y > 0, "Top category Y is above spine")
+assert(c4.y < 0, "Bottom category Y is below spine")
+
+-- Check station X progression (from left to right towards head)
+assert(c3.joint_x > c1.joint_x, "Station 2 joint is to the right of Station 1 joint")
+assert(root12.x > c3.joint_x, "Head node is to the right of all category joints")
+
+-- Check spine coordinates
+assert(root12.spine_start_x < c1.x, "Spine starts to the left of the leftmost category/cause")
+assert_eq(root12.spine_end_x, root12.x, "Spine ends at the Head node")
+
+-- Check rib and cause connection generation
+local rib_path = curve.generate_path(root12, c1, "straight", 1.2)
+assert(rib_path:find("%-%-"), "Rib path is straight diagonal line")
+
+local cause1 = c1.children[1]
+assert(cause1.attach_x > cause1.x + cause1.box_width, "Cause connects horizontally to rib on its right")
+local cause_path = curve.generate_path(c1, cause1, "straight", 1.2)
+assert(cause_path:find("%-%-"), "Cause branch connects horizontally")
+
+print("Test 12 passed successfully!")
+
 print("ALL PARSER UNIT TESTS PASSED!")

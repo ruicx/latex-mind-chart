@@ -269,7 +269,7 @@ For non-rectangular geometries (`diamond`, `hexagon`), standard box padding is i
 
 ---
 
-### 2.9 Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone` / `layout=ishikawa`)
+### 2.9 Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone` / `layout=ishikawa`) *(Completed in v2.0.0)*
 
 #### 2.9.1 Motivation & Visual Paradigm
 The **Ishikawa (Fishbone) Diagram** is a standard quality control and systems engineering methodology for root cause analysis:
@@ -301,4 +301,4 @@ The roadmap features are implemented iteratively following our test-driven verif
 - [x] **Milestone 6 (Phase 6)**: Vertical & Org-Chart Tree Layout (`layout=down`, `layout=org`, `layout=vertical`).
 - [x] **Milestone 7 (Phase 7)**: Native Vector Icons & Symbol Indicators (`icon=...`, TikZ micro-glyphs).
 - [x] **Milestone 8 (Phase 8)**: Custom Node Geometric Shapes (`shape=diamond|hexagon|rect|capsule`).
-- [ ] **Milestone 9 (Phase 9)**: Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone`).
+- [x] **Milestone 9 (Phase 9)**: Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone`).

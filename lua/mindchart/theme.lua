@@ -189,9 +189,14 @@ end
 function theme.apply(root, options)
     options = options or {}
     local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
+    local is_fishbone = (options.layout == "fishbone" or options.layout == "ishikawa" or options.layout == "cause_effect")
     local theme_name = options.theme or "rainbow"
     local style_name = options.style or "classic"
     local global_shape = theme.normalize_shape(options.shape)
+
+    if is_fishbone then
+        root.is_fishbone = true
+    end
 
     local palette
     local root_color = "#2C3E50"

@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage[a4paper, landscape, margin=1.5cm]{geometry}
+\usepackage{./tex/mindchart}
+
+\begin{document}
+
+\section*{Ishikawa / Fishbone Root Cause Analysis (\texttt{layout=fishbone})}
+
+\begin{mindchart}[theme=rainbow, layout=fishbone, style=classic, scale=0.85]
+# Website High Latency, color=C0392B
+  - Server Hardware, color=2980B9, icon=gear
+    - High CPU Utilization, badge=P0
+    - Insufficient RAM Buffer
+    - Disk I/O Throttling
+  - Network Gateway, color=27AE60, icon=flag
+    - DNS Resolution Timeout
+    - BGP Route Flapping
+    - TLS Handshake Delay, status=Done
+  - Application Code, color=E67E22, icon=fire
+    - Synchronous Remote Call, badge=P0
+    - Unindexed SQL Query, status=WIP
+    - Memory Leak in Worker Loop
+  - Database Cluster, color=8E44AD, icon=lock
+    - Connection Pool Exhaustion
+    - Row-Level Lock Contention
+    - Read Replica Lagging
+\end{mindchart}
+
+\newpage
+
+\section*{Classic 6M Manufacturing Ishikawa Diagram (\texttt{style=boxed})}
+
+\begin{mindchart}[theme=nord, layout=ishikawa, style=boxed, scale=0.75]
+# Assembly Defect Rate, color=BF616A
+  - Machine, color=5E81AC, icon=gear
+    - Calibration Drift
+    - Bearing Wear
+    - Hydraulic Pressure Drop
+  - Method, color=88C0D0, icon=bulb
+    - Inconsistent SOP
+    - Conveyor Speed Mismatch
+  - Material, color=A3BE8C, icon=star
+    - Alloy Impurities
+    - Polymer Tensile Variance
+  - Manpower, color=EBCB8B, icon=heart
+    - Shift Fatigue, tag=Ergonomics
+    - Operator Training Gap
+  - Measurement, color=B48EAD, icon=info
+    - Sensor Calibration Error
+    - Optical Parallax
+  - Milieu (Environment), color=D08770, icon=warn
+    - Ambient Humidity Fluctuations
+    - Cleanroom Particle Count
+\end{mindchart}
+
+\end{document}

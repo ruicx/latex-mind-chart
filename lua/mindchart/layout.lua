@@ -398,6 +398,184 @@ local function layout_vertical(root, cfg)
     position_subtree_vertical(root, root_left_x, y_per_depth, cfg)
 end
 
+--- Computes fishbone / Ishikawa cause-and-effect layout.
+--- @param root table Root node (Problem / Effect Head on the right)
+--- @param cfg table Layout parameters
+local function layout_fishbone(root, cfg)
+    root.is_fishbone = true
+    root.side = "right"
+    compute_node_box(root, cfg)
+
+    -- Separate Level 1 children into top and bottom categories
+    local top_cats = {}
+    local bottom_cats = {}
+
+    for _, cat in ipairs(root.children) do
+        compute_node_box(cat, cfg)
+        for _, cause in ipairs(cat.children) do
+            compute_node_box(cause, cfg)
+        end
+
+        local s = cat.options.side or cat.side
+        if s == "top" or s == "above" or s == "up" then
+            cat.side = "top"
+            table.insert(top_cats, cat)
+        elseif s == "bottom" or s == "below" or s == "down" then
+            cat.side = "bottom"
+            table.insert(bottom_cats, cat)
+        else
+            -- Alternate: odd top, even bottom
+            if #top_cats <= #bottom_cats then
+                cat.side = "top"
+                table.insert(top_cats, cat)
+            else
+                cat.side = "bottom"
+                table.insert(bottom_cats, cat)
+            end
+        end
+    end
+
+    local num_stations = math.max(#top_cats, #bottom_cats)
+    if num_stations == 0 then
+        root.x = 0
+        root.y = 0
+        root.spine_start_x = -60.0
+        root.spine_end_x = 0
+        return
+    end
+
+    local cause_sep_y = 22.0
+    local cot_60 = 0.57735 -- 1.0 / tan(60 deg)
+
+    -- First pass: for each station k, compute required dimensions
+    local stations = {}
+
+    for k = 1, num_stations do
+        local top_cat = top_cats[k]
+        local bot_cat = bottom_cats[k]
+
+        local st = {
+            top_cat = top_cat,
+            bot_cat = bot_cat,
+            top_span_h = 0.0,
+            bot_span_h = 0.0,
+            top_causes_w = 0.0,
+            bot_causes_w = 0.0,
+            station_w = 0.0,
+        }
+
+        if top_cat then
+            local m = math.max(1, #top_cat.children)
+            st.top_span_h = (m + 0.8) * cause_sep_y + 12.0
+            for _, cause in ipairs(top_cat.children) do
+                st.top_causes_w = math.max(st.top_causes_w, cause.box_width + 8.0)
+            end
+        end
+
+        if bot_cat then
+            local m = math.max(1, #bot_cat.children)
+            st.bot_span_h = (m + 0.8) * cause_sep_y + 12.0
+            for _, cause in ipairs(bot_cat.children) do
+                st.bot_causes_w = math.max(st.bot_causes_w, cause.box_width + 8.0)
+            end
+        end
+
+        local rib_dx_top = st.top_span_h * cot_60
+        local rib_dx_bot = st.bot_span_h * cot_60
+        local rib_dx = math.max(rib_dx_top, rib_dx_bot)
+
+        local causes_w = math.max(st.top_causes_w, st.bot_causes_w)
+        local cat_w = math.max(top_cat and top_cat.box_width or 0.0, bot_cat and bot_cat.box_width or 0.0)
+
+        st.station_w = math.max(causes_w, cat_w * 0.5) + rib_dx + 30.0
+        stations[k] = st
+    end
+
+    -- Second pass: position station joints along the spine (Y = 0)
+    local cur_x = 0.0
+    local min_x_all = 0.0
+
+    for k = 1, num_stations do
+        local st = stations[k]
+        cur_x = cur_x + st.station_w
+        local joint_x = cur_x
+
+        -- Position top category and causes
+        if st.top_cat then
+            local cat = st.top_cat
+            cat.is_fishbone = true
+            local rib_dx = st.top_span_h * cot_60
+            local rib_start_x = joint_x - rib_dx
+            local rib_start_y = st.top_span_h
+
+            cat.x = rib_start_x - (cat.box_width / 2.0)
+            cat.y = rib_start_y + (cat.box_height / 2.0)
+            cat.rib_start_x = rib_start_x
+            cat.rib_start_y = rib_start_y
+            cat.joint_x = joint_x
+            cat.joint_y = 0.0
+
+            if cat.x < min_x_all then min_x_all = cat.x end
+
+            -- Position causes along the rib
+            for j, cause in ipairs(cat.children) do
+                cause.is_fishbone = true
+                cause.side = "left"
+                local cy = rib_start_y - (j * cause_sep_y)
+                local dy = rib_start_y - cy
+                local attach_x = rib_start_x + (dy * cot_60)
+
+                cause.attach_x = attach_x
+                cause.attach_y = cy
+                cause.x = attach_x - cause.box_width - 6.0
+                cause.y = cy
+
+                if cause.x < min_x_all then min_x_all = cause.x end
+            end
+        end
+
+        -- Position bottom category and causes
+        if st.bot_cat then
+            local cat = st.bot_cat
+            cat.is_fishbone = true
+            local rib_dx = st.bot_span_h * cot_60
+            local rib_start_x = joint_x - rib_dx
+            local rib_start_y = -st.bot_span_h
+
+            cat.x = rib_start_x - (cat.box_width / 2.0)
+            cat.y = rib_start_y - (cat.box_height / 2.0)
+            cat.rib_start_x = rib_start_x
+            cat.rib_start_y = rib_start_y
+            cat.joint_x = joint_x
+            cat.joint_y = 0.0
+
+            if cat.x < min_x_all then min_x_all = cat.x end
+
+            -- Position causes along the rib
+            for j, cause in ipairs(cat.children) do
+                cause.is_fishbone = true
+                cause.side = "left"
+                local cy = rib_start_y + (j * cause_sep_y)
+                local dy = cy - rib_start_y
+                local attach_x = rib_start_x + (dy * cot_60)
+
+                cause.attach_x = attach_x
+                cause.attach_y = cy
+                cause.x = attach_x - cause.box_width - 6.0
+                cause.y = cy
+
+                if cause.x < min_x_all then min_x_all = cause.x end
+            end
+        end
+    end
+
+    -- Position Problem Head (Root) on the far right
+    root.x = cur_x + 40.0
+    root.y = 0.0
+    root.spine_start_x = min_x_all - 20.0
+    root.spine_end_x = root.x
+end
+
 --- Helper to collect a node and all its descendants recursively.
 local function collect_subtree_nodes(n, acc)
     table.insert(acc, n)
@@ -641,6 +819,8 @@ function layout.compute(root, options)
         if not options.sibling_sep then cfg.sibling_sep = 18.0 end
         if not options.level_sep then cfg.level_sep = 26.0 end
         layout_vertical(root, cfg)
+    elseif mode == "fishbone" or mode == "ishikawa" or mode == "cause_effect" then
+        layout_fishbone(root, cfg)
     else
         -- Default: right
         layout_unidirectional(root, 1, cfg)

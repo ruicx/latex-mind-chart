@@ -20,7 +20,7 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
   - **Smart Auto-Detection**: Automatically identifies format without manual configuration.
 - **📐 Sub-Millimeter Dimension Probing**: Queries TeX's internal box registers (`tex.box`) directly from Lua, measuring exact widths and heights of text, math formulas, and formatting macros before laying out nodes.
 - **🎨 Composable Configuration Matrix**:
-  - **4 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing), Downward Organizational Chart (`layout=org` / `layout=down`).
+  - **5 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing), Downward Organizational Chart (`layout=org` / `layout=down`), and Ishikawa / Fishbone Diagram (`layout=fishbone` / `layout=ishikawa`).
   - **7 Geometric Shapes**: Capsule (`capsule`/`pill`), Card (`card`), Sharp rectangle (`rect`), Diamond (`diamond`/`rhombus`), Hexagon (`hexagon`/`hex`), Ellipse (`ellipse`), Underline rule (`underline`).
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
   - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
