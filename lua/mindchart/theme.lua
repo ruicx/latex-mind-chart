@@ -164,6 +164,7 @@ end
 --- @param options table Global options (e.g. { theme="rainbow", style="classic" })
 function theme.apply(root, options)
     options = options or {}
+    local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
     local theme_name = options.theme or "rainbow"
     local style_name = options.style or "classic"
 
@@ -225,6 +226,8 @@ function theme.apply(root, options)
                 child.color = child.options.color or parent_color
                 if not child.style then
                     if style_name == "boxed" then
+                        child.style = "boxed"
+                    elseif is_vertical and style_name ~= "underline" then
                         child.style = "boxed"
                     else
                         -- classic and underline both use underline for level 2+

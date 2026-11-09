@@ -20,7 +20,7 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
   - **Smart Auto-Detection**: Automatically identifies format without manual configuration.
 - **📐 Sub-Millimeter Dimension Probing**: Queries TeX's internal box registers (`tex.box`) directly from Lua, measuring exact widths and heights of text, math formulas, and formatting macros before laying out nodes.
 - **🎨 Composable Configuration Matrix**:
-  - **3 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing).
+  - **4 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing), Downward Organizational Chart (`layout=org` / `layout=down`).
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
   - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
   - **10 Curated Color Themes & Custom Palettes**: `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized`, ad-hoc inline lists (`palette={...}`), and custom defined palettes (`\mindchartDefineTheme`).
@@ -110,7 +110,7 @@ Options are passed as comma-separated key-value pairs to `\begin{mindchart}[...]
 
 | Option | Values | Default | Description |
 | :--- | :--- | :---: | :--- |
-| `layout` | `right`, `balanced`, `left` | `right` | Overall mind map geometric layout algorithm. |
+| `layout` | `right`, `balanced`, `left`, `org`, `down` | `right` | Overall mind map geometric layout algorithm. |
 | `style` | `classic`, `boxed`, `underline` | `classic` | Visual card / box shape for nodes across hierarchy levels. |
 | `line` | `curve`, `elbow`, `straight` | `curve` | Connector line geometry. |
 | `theme` | `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized` | `rainbow` | Branch palette with automatic color propagation. |

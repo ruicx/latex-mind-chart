@@ -1,0 +1,71 @@
+\documentclass{article}
+\usepackage[margin=0.8in, landscape]{geometry}
+\usepackage{./tex/mindchart}
+\usepackage[bookmarks=true, colorlinks=true, linkcolor=blue]{hyperref}
+
+\begin{document}
+
+\section*{1. Organizational Chart (\texttt{layout=org}, \texttt{line=elbow})}
+
+\begin{center}
+\begin{mindchart}[theme=business, layout=org, scale=0.78]
+# Executive Committee, color=1B4F72
+  - Engineering Division, name=eng, color=2874A6
+    - Platform Architecture, badge=P0
+    - Core Systems Team
+    - Security \& Compliance
+  - Product \& Strategy, name=prod, color=117864
+    - Growth Strategy
+    - User Experience Design
+  - Global Operations, name=ops, color=784212
+    - Infrastructure Reliability
+    - Customer Success
+\rel[color=E67E22, bend=-14]{prod}{eng}{Product Requirements}
+\summary{eng}{prod}{Core Technology Units}
+\end{mindchart}
+\end{center}
+
+\newpage
+
+\section*{2. Vertical Tree with Smooth Curves (\texttt{layout=down}, \texttt{line=curve})}
+
+\begin{center}
+\begin{mindchart}[theme=rainbow, layout=down, line=curve, scale=0.68]
+# Fullstack Cloud Ecosystem, color=2C3E50
+  - Frontend Services, name=fe, color=3498DB
+    - React Client Application, tag=TypeScript, status=Done
+    - Mobile Native App, tag=Swift, status=WIP
+  - Backend Services, color=E67E22
+    - GraphQL Gateway
+    - Distributed Microservices, collapsed
+      - Auth Service
+      - Payment Engine
+      - Billing Worker
+  - Storage Layer, name=storage, color=27AE60
+    - PostgreSQL Relational Database, badge=1
+    - Redis Cache Cluster, badge=2
+\boundary[color=3498DB, style=dashed]{fe}{Client Layer}
+\boundary[color=27AE60, style=dotted, title_style=card]{storage}{Persistence Tier}
+\end{mindchart}
+\end{center}
+
+\newpage
+
+\section*{3. Vertical Tree with Tapered Ribbons (\texttt{layout=vertical}, \texttt{line=tapered})}
+
+\begin{center}
+\begin{mindchart}[theme=nord, layout=vertical, line=tapered, scale=0.85]
+# Research Laboratory, color=2E3440
+  - Deep Learning, color=5E81AC
+    - Large Language Models
+    - Vision Transformers
+  - Robotics, color=A3BE8C
+    - Quadruped Locomotion
+    - Dexterous Manipulation
+  - Quantum Computing, color=D08770
+    - Superconducting Qubits
+    - Quantum Error Correction
+\end{mindchart}
+\end{center}
+
+\end{document}

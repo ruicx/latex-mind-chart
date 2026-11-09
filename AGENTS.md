@@ -104,6 +104,7 @@ Before committing any modifications, run the following verification steps:
    lualatex -interaction=nonstopmode -output-directory=test test/test_styles.tex
    lualatex -interaction=nonstopmode -output-directory=test test/test_adv.tex
    lualatex -interaction=nonstopmode -output-directory=test test/test_markdown.tex
+   lualatex -interaction=nonstopmode -output-directory=test test/test_vertical.tex
    ```
    All test files must compile cleanly with exit code 0.
 

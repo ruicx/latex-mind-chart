@@ -252,7 +252,7 @@ end
 --- @param b table
 --- @return string
 local function render_boundary_badge(b)
-    if not b.node or b.node.text == "" then return "" end
+    if not b.box or not b.node or b.node.text == "" then return "" end
 
     local col_tikz = to_tikz_color(b.color or "#2C3E50")
     local cx = b.node.x + (b.node.box_width / 2.0)
@@ -279,6 +279,7 @@ end
 local function render_fold_indicator(node)
     if not node or not node.collapsed or #node.children == 0 then return "" end
 
+    local is_down = (node.side == "down")
     local is_right = (node.side ~= "left")
     local col_tikz = to_tikz_color(node.color or "#2C3E50")
 
@@ -290,16 +291,32 @@ local function render_fold_indicator(node)
     end
 
     local stem_x1, stem_x2, badge_x
-    if is_right then
+    local stem_y1, stem_y2, badge_y
+    if is_down then
+        local cx = node.x + (node.box_width / 2.0)
+        local y_edge = node.y - (node.box_height / 2.0)
+        stem_x1 = cx
+        stem_x2 = cx
+        badge_x = cx
+        stem_y1 = y_edge
+        stem_y2 = y_edge - 5.0
+        badge_y = y_edge - 12.0
+    elseif is_right then
         local x_edge = node.x + node.box_width
         stem_x1 = x_edge
         stem_x2 = x_edge + 5.0
         badge_x = x_edge + 12.0
+        stem_y1 = anchor_y
+        stem_y2 = anchor_y
+        badge_y = anchor_y
     else
         local x_edge = node.x
         stem_x1 = x_edge
         stem_x2 = x_edge - 5.0
         badge_x = x_edge - 12.0
+        stem_y1 = anchor_y
+        stem_y2 = anchor_y
+        badge_y = anchor_y
     end
 
     local count_str
@@ -313,12 +330,12 @@ local function render_fold_indicator(node)
     -- Stem connecting line
     table.insert(parts, string.format(
         "\\draw [draw=%s, line width=1.0pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
-        col_tikz, stem_x1, anchor_y, stem_x2, anchor_y
+        col_tikz, stem_x1, stem_y1, stem_x2, stem_y2
     ))
     -- Pill / circle badge
     table.insert(parts, string.format(
         "\\node (mc_fold_%d) [fill=%s, rounded corners=3pt, text=white, font=\\tiny\\bfseries, minimum height=9.0pt, inner sep=1.8pt] at (%.2fpt, %.2fpt) {%s};",
-        node.id, col_tikz, badge_x, anchor_y, count_str
+        node.id, col_tikz, badge_x, badge_y, count_str
     ))
 
     return table.concat(parts, " ")
@@ -360,7 +377,8 @@ renderer.sanitize_for_bookmark = sanitize_for_bookmark
 --- @param options table Global options.
 function renderer.render(root, options)
     options = options or {}
-    local line_style = options.line or "curve"
+    local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
+    local line_style = options.line or (is_vertical and "elbow" or "curve")
     local line_width = tonumber(options.line_width) or 1.2
     local scale = options.scale or "1"
 

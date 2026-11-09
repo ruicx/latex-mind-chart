@@ -254,6 +254,99 @@ local function layout_unidirectional(root, direction, cfg)
     position_subtree(root, root.x, 0.0, direction, cfg)
 end
 
+--- Recursively computes the subtree bounding width for all nodes in vertical layout.
+--- @param node table
+--- @param cfg table
+local function compute_subtree_widths(node, cfg)
+    compute_node_box(node, cfg)
+
+    if #node.children == 0 or node.collapsed then
+        node.subtree_width = node.box_width
+        if node.collapsed then
+            node.folded_count = ast.count_descendants(node)
+        end
+        return
+    end
+
+    local children_width = 0
+    for i, child in ipairs(node.children) do
+        compute_subtree_widths(child, cfg)
+        children_width = children_width + child.subtree_width
+        if i > 1 then
+            children_width = children_width + cfg.sibling_sep
+        end
+    end
+
+    node.subtree_width = math.max(node.box_width, children_width)
+end
+
+--- Collects max node height per hierarchy depth level.
+local function collect_max_heights_per_depth(node, max_h)
+    local d = node.depth
+    max_h[d] = math.max(max_h[d] or 0, node.box_height)
+    if not node.collapsed then
+        for _, c in ipairs(node.children) do
+            collect_max_heights_per_depth(c, max_h)
+        end
+    end
+end
+
+--- Positions a node and its children in vertical layout.
+--- @param node table
+--- @param left_x number Left boundary of allocated horizontal span for this subtree
+--- @param y_per_depth table
+--- @param cfg table
+local function position_subtree_vertical(node, left_x, y_per_depth, cfg)
+    local center_x = left_x + (node.subtree_width / 2.0)
+    node.x = center_x - (node.box_width / 2.0)
+    node.y = y_per_depth[node.depth] or 0.0
+
+    if #node.children == 0 or node.collapsed then return end
+
+    -- Total width occupied by children
+    local total_children_w = 0
+    for i, child in ipairs(node.children) do
+        total_children_w = total_children_w + child.subtree_width
+        if i > 1 then
+            total_children_w = total_children_w + cfg.sibling_sep
+        end
+    end
+
+    -- Center children under center_x
+    local child_start_x = center_x - (total_children_w / 2.0)
+    for _, child in ipairs(node.children) do
+        position_subtree_vertical(child, child_start_x, y_per_depth, cfg)
+        child_start_x = child_start_x + child.subtree_width + cfg.sibling_sep
+    end
+end
+
+--- Vertical top-down layout algorithm (Org-Charts and downward trees).
+--- @param root table
+--- @param cfg table
+local function layout_vertical(root, cfg)
+    compute_subtree_widths(root, cfg)
+    propagate_side(root, "down")
+
+    local max_h = {}
+    collect_max_heights_per_depth(root, max_h)
+
+    local y_per_depth = {}
+    y_per_depth[0] = 0.0
+    local max_depth = 0
+    for d, _ in pairs(max_h) do
+        if d > max_depth then max_depth = d end
+    end
+
+    for d = 1, max_depth do
+        local prev_h = max_h[d - 1] or 20.0
+        local curr_h = max_h[d] or 20.0
+        y_per_depth[d] = y_per_depth[d - 1] - (prev_h / 2.0) - cfg.level_sep - (curr_h / 2.0)
+    end
+
+    local root_left_x = - (root.subtree_width / 2.0)
+    position_subtree_vertical(root, root_left_x, y_per_depth, cfg)
+end
+
 --- Helper to collect a node and all its descendants recursively.
 local function collect_subtree_nodes(n, acc)
     table.insert(acc, n)
@@ -271,8 +364,9 @@ local function position_summaries(cfg)
         local to_node = ast.named_nodes[s.to]
         if from_node and to_node and s.node then
             compute_node_box(s.node, cfg)
+            local is_down = (from_node.side == "down")
             local is_right = (from_node.side ~= "left")
-            local side_str = is_right and "right" or "left"
+            local side_str = is_down and "down" or (is_right and "right" or "left")
             s.node.side = side_str
 
             -- Collect all nodes in the summarized range
@@ -332,26 +426,47 @@ local function position_summaries(cfg)
             local y_mid = (y_top + y_bot) / 2.0
             local w_amp = 10.0 -- Bracket amplitude
 
-            local x_bracket
-            if is_right then
-                x_bracket = x_max + 8.0
+            if is_down then
+                local y_bracket = y_bot - 8.0
+                s.node.y = y_bracket - w_amp - 8.0 - (s.node.box_height / 2.0)
+                s.node.x = ((x_min + x_max) / 2.0) - (s.node.box_width / 2.0)
+
+                s.bracket = {
+                    x_left = x_min,
+                    x_right = x_max,
+                    x_mid = (x_min + x_max) / 2.0,
+                    y = y_bracket,
+                    w = w_amp,
+                    side = "down",
+                    color = s.node.color or from_node.color,
+                }
+            elseif is_right then
+                local x_bracket = x_max + 8.0
                 s.node.x = x_bracket + w_amp + 8.0
                 s.node.y = y_mid
+                s.bracket = {
+                    x = x_bracket,
+                    y_top = y_top,
+                    y_bot = y_bot,
+                    y_mid = y_mid,
+                    w = w_amp,
+                    side = side_str,
+                    color = s.node.color or from_node.color,
+                }
             else
-                x_bracket = x_min - 8.0
+                local x_bracket = x_min - 8.0
                 s.node.x = (x_bracket - w_amp - 8.0) - s.node.box_width
                 s.node.y = y_mid
+                s.bracket = {
+                    x = x_bracket,
+                    y_top = y_top,
+                    y_bot = y_bot,
+                    y_mid = y_mid,
+                    w = w_amp,
+                    side = side_str,
+                    color = s.node.color or from_node.color,
+                }
             end
-
-            s.bracket = {
-                x = x_bracket,
-                y_top = y_top,
-                y_bot = y_bot,
-                y_mid = y_mid,
-                w = w_amp,
-                side = side_str,
-                color = s.node.color or from_node.color,
-            }
         end
     end
 end
@@ -471,6 +586,10 @@ function layout.compute(root, options)
         layout_balanced(root, cfg)
     elseif mode == "left" then
         layout_unidirectional(root, -1, cfg)
+    elseif mode == "down" or mode == "vertical" or mode == "org" or mode == "tree_down" then
+        if not options.sibling_sep then cfg.sibling_sep = 18.0 end
+        if not options.level_sep then cfg.level_sep = 26.0 end
+        layout_vertical(root, cfg)
     else
         -- Default: right
         layout_unidirectional(root, 1, cfg)

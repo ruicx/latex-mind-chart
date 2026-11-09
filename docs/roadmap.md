@@ -23,8 +23,8 @@ The roadmap is organized into iterative phases designed to elevate `mindchart` i
 │ Ext 2   │ Subtree Folding (+N badges)    │ Visual     │ Collapsed tree│ Completed (v1.0.0)  │
 │ Ext 3   │ PDF Document Bookmarks Sync    │ Metadata   │ hyperref sync │ Completed (v1.0.0)  │
 ├─────────┼────────────────────────────────┼────────────┼───────────────┼─────────────────────┤
-│ Phase 6 │ Vertical & Org-Chart Layout    │ Layout     │ layout=down   │ Next in Progress    │
-│ Phase 7 │ Native Vector Icons & Symbols  │ Metadata   │ icon=...      │ Planned (v2.0.0)    │
+│ Phase 6 │ Vertical & Org-Chart Layout    │ Layout     │ layout=down   │ Completed (v2.0.0)  │
+│ Phase 7 │ Native Vector Icons & Symbols  │ Metadata   │ icon=...      │ Next in Progress    │
 │ Phase 8 │ Custom Node Geometric Shapes   │ Visual     │ shape=diamond │ Planned (v2.0.0)    │
 │ Phase 9 │ Fishbone / Ishikawa Diagram    │ Layout     │ layout=fish   │ Planned (v2.0.0)    │
 └─────────┴────────────────────────────────┴────────────┴───────────────┴─────────────────────┘
@@ -204,7 +204,7 @@ mindchart.tds.zip
 
 ---
 
-### 2.6 Vertical & Org-Chart Tree Layout (`layout=down` / `layout=vertical` / `layout=org`)
+### 2.6 Vertical & Org-Chart Tree Layout (`layout=down` / `layout=vertical` / `layout=org`) *(Completed in v2.0.0)*
 
 #### 2.6.1 Motivation & Visual Paradigm
 While horizontal mind maps excel at expansive technical hierarchies and widescreen documents, classic **Organizational Charts**, decision trees, and workflow taxonomies naturally flow vertically from top to bottom. In this layout, the Root capsule sits at the top center, and hierarchical levels descend downwards, with sibling nodes spaced horizontally across the canvas.
@@ -298,7 +298,7 @@ The roadmap features are implemented iteratively following our test-driven verif
 - [x] **Milestone Ext**: Extended color palettes (10 presets), custom theme registration (`\mindchartDefineTheme`), subtree folding (`collapsed`), and PDF bookmarks (`bookmarks=true`).
 
 ### v2.0.0 Feature Pipeline *(Active)*
-- [ ] **Milestone 6 (Phase 6)**: Vertical & Org-Chart Tree Layout (`layout=down`, `layout=org`, `layout=vertical`).
+- [x] **Milestone 6 (Phase 6)**: Vertical & Org-Chart Tree Layout (`layout=down`, `layout=org`, `layout=vertical`).
 - [ ] **Milestone 7 (Phase 7)**: Native Vector Icons & Symbol Indicators (`icon=...`, TikZ micro-glyphs).
 - [ ] **Milestone 8 (Phase 8)**: Custom Node Geometric Shapes (`shape=diamond|hexagon|rect|capsule`).
 - [ ] **Milestone 9 (Phase 9)**: Fishbone / Cause-and-Effect Diagram Layout (`layout=fishbone`).

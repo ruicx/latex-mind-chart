@@ -13,6 +13,19 @@ local curve = {}
 --- @return number, number, number, number, number, number
 --- (xp, yp, xc, yc, x_line_end, y_line_end)
 function curve.get_anchors(parent, child)
+    if child.side == "down" then
+        local xp = parent.x + (parent.box_width / 2.0)
+        local yp = parent.y - (parent.box_height / 2.0)
+        local xc = child.x + (child.box_width / 2.0)
+        local yc = child.y + (child.box_height / 2.0)
+        local x_line_end = xc
+        local y_line_end = yc
+        if child.style == "underline" then
+            y_line_end = child.y - (child.box_height / 2.0)
+        end
+        return xp, yp, xc, yc, x_line_end, y_line_end
+    end
+
     local xp, yp
     local is_right = (child.side == "right")
 
@@ -96,6 +109,47 @@ function curve.generate_tapered_path(parent, child, line_width)
     local w0 = start_w / 2.0
     local w1 = end_w / 2.0
 
+    if child.side == "down" then
+        local yp_eff = yp
+        if parent.style ~= "underline" then
+            yp_eff = yp + 1.5
+        else
+            yp_eff = yp + 0.5
+        end
+
+        local yc_eff = yc
+        if child.style ~= "underline" then
+            yc_eff = yc - 1.5
+        end
+
+        local dy = yc_eff - yp_eff
+        local c1y = yp_eff + (dy * 0.5)
+        local c2y = yc_eff - (dy * 0.5)
+
+        local ribbon_fill = string.format(
+            "\\fill[fill=%s] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- cycle;",
+            col,
+            xp - w0, yp_eff,
+            xp - w0, c1y,
+            xc - w1, c2y,
+            xc - w1, yc_eff,
+            xc + w1, yc_eff,
+            xc + w1, c2y,
+            xp + w0, c1y,
+            xp + w0, yp_eff
+        )
+
+        if child.style == "underline" then
+            local underline_draw = string.format(
+                "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                col, end_w, child.x, child.y - (child.box_height / 2.0), child.x + child.box_width, child.y - (child.box_height / 2.0)
+            )
+            return ribbon_fill .. " " .. underline_draw
+        else
+            return ribbon_fill
+        end
+    end
+
     local is_right = (child.side == "right")
     local sign = is_right and 1.0 or -1.0
 
@@ -151,6 +205,59 @@ function curve.generate_path(parent, child, line_style, line_width)
     local xp, yp, xc, yc, x_end, y_end = curve.get_anchors(parent, child)
     local col = theme.to_tikz_color(child.color or "#2C3E50")
     local lw = line_width or 1.2
+
+    if child.side == "down" then
+        if line_style == "tapered" or line_style == "organic" then
+            return curve.generate_tapered_path(parent, child, line_width)
+        elseif line_style == "elbow" then
+            local mid_y = (yp + yc) / 2.0
+            if child.style == "underline" then
+                local ul_y = child.y - (child.box_height / 2.0)
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt, rounded corners=3pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xp, mid_y, xc, mid_y, xc, yc,
+                    col, lw, child.x, ul_y, child.x + child.box_width, ul_y
+                )
+            else
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt, rounded corners=3pt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xp, mid_y, xc, mid_y, xc, yc
+                )
+            end
+        elseif line_style == "straight" then
+            if child.style == "underline" then
+                local ul_y = child.y - (child.box_height / 2.0)
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xc, yc,
+                    col, lw, child.x, ul_y, child.x + child.box_width, ul_y
+                )
+            else
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xc, yc
+                )
+            end
+        else
+            -- Default: Smooth vertical cubic Bézier S-curve
+            local dy = yc - yp
+            local c1y = yp + (dy * 0.5)
+            local c2y = yc - (dy * 0.5)
+            if child.style == "underline" then
+                local ul_y = child.y - (child.box_height / 2.0)
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt); \\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xp, c1y, xc, c2y, xc, yc,
+                    col, lw, child.x, ul_y, child.x + child.box_width, ul_y
+                )
+            else
+                return string.format(
+                    "\\draw[draw=%s, line width=%.2fpt] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt);",
+                    col, lw, xp, yp, xp, c1y, xc, c2y, xc, yc
+                )
+            end
+        end
+    end
 
     if line_style == "tapered" or line_style == "organic" then
         return curve.generate_tapered_path(parent, child, line_width)
@@ -208,6 +315,28 @@ end
 function curve.generate_bracket(b, node)
     local col = theme.to_tikz_color(b.color or "#2C3E50")
     local w = b.w or 10.0
+
+    if b.side == "down" then
+        local cusp_y = b.y - w
+        local mid_ctrl_y = b.y - (w * 0.5)
+        local node_connect_y = node.y + (node.box_height / 2.0)
+
+        local path = string.format(
+            "\\draw[draw=%s, line width=1.3pt] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt);",
+            col,
+            b.x_left, b.y,
+            b.x_left, mid_ctrl_y,
+            b.x_mid, mid_ctrl_y,
+            b.x_mid, cusp_y,
+            b.x_mid, mid_ctrl_y,
+            b.x_right, mid_ctrl_y,
+            b.x_right, b.y,
+            b.x_mid, cusp_y,
+            b.x_mid, node_connect_y
+        )
+        return path
+    end
+
     local is_right = (b.side ~= "left")
     local sign = is_right and 1.0 or -1.0
 

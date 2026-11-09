@@ -54,6 +54,7 @@ Options can be supplied as comma-separated key-value pairs in the environment ar
 | `right` | Standard logic chart growing strictly to the right. | Yes |
 | `balanced` | Bi-directional balanced mind map (automatically splits Level 1 branches left & right). | No |
 | `left` | Logic chart growing strictly to the left. | No |
+| `org` / `down` / `vertical` | Organizational Chart / Downward Tree (root centered at top, branches descending downwards with orthogonal elbow bus lines). | No |
 
 ### 2.2 Visual Styles (`style = <name>`)
 
