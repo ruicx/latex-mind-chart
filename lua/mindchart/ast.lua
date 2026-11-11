@@ -103,6 +103,21 @@ function ast.init_badges_and_tags(node)
     end
 end
 
+--- Applies parsed options to an existing node, including derived state.
+--- @param node table
+--- @param options table
+function ast.apply_options(node, options)
+    for k, v in pairs(options) do node.options[k] = v end
+    node.collapsed = options.collapsed == true or options.collapsed == "true"
+        or options.folded == true or options.folded == "true"
+    node.style = options.style
+    if options.name or options.id then
+        node.name = options.name or options.id
+        ast.named_nodes[node.name] = node
+    end
+    ast.init_badges_and_tags(node)
+end
+
 --- Creates a new AST Node.
 --- @param text string The raw text/content of the node.
 --- @param options table|nil Optional table of per-node options (e.g. side, color).
@@ -137,21 +152,7 @@ function ast.new_node(text, options)
         folded_count = 0,
     }
 
-    if options then
-        if options.collapsed == true or options.collapsed == "true" or options.folded == true or options.folded == "true" then
-            node.collapsed = true
-        end
-    end
-
-    if options and (options.name or options.id) then
-        local name = options.name or options.id
-        ast.named_nodes[name] = node
-        node.name = name
-    end
-
-    if options then
-        ast.init_badges_and_tags(node)
-    end
+    ast.apply_options(node, options or {})
 
     return node
 end

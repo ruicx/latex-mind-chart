@@ -260,7 +260,7 @@ function theme.apply(root, options)
                 l1_node.style = "underline"
             end
         else
-            l1_node.shape = (l1_node.style == "underline" and "underline" or "card")
+            l1_node.shape = (l1_node.style == "underline" and "underline" or (l1_node.style == "capsule" and "capsule" or "card"))
         end
 
         -- Propagate color to descendants
@@ -370,6 +370,14 @@ function theme.to_tikz_color(col)
     else
         return col
     end
+end
+
+--- Returns the font weight shared by measurement and rendering.
+--- @param node table
+--- @return boolean
+function theme.is_bold(node)
+    return node.depth == 0 or node.depth == 1 or node.style == "card"
+        or node.options.fill == "solid" or node.options.fill == true
 end
 
 return theme

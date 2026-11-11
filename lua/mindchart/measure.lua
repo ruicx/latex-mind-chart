@@ -4,6 +4,7 @@
 --]]
 
 local ast = require("mindchart.ast")
+local theme = require("mindchart.theme")
 
 local measure = {}
 
@@ -79,11 +80,7 @@ function measure.emit_measurement_commands(options)
             node.max_width = mw
         end
 
-        local global_style = options.style or "classic"
-        local is_card = (node.style == "card" or node.options.style == "card" or
-            ((not node.style or node.style == "classic") and node.depth == 1 and global_style == "classic"))
-        local is_capsule = (node.depth == 0 or node.style == "capsule" or node.options.style == "capsule")
-        local is_bold = is_capsule or is_card
+        local is_bold = theme.is_bold(node)
         local measure_text = node.text
         if is_bold then
             measure_text = "\\bfseries " .. node.text:gsub("\\\\", "\\\\\\bfseries ")

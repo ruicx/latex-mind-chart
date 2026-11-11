@@ -9,6 +9,7 @@ local theme = require("mindchart.theme")
 local icon = require("mindchart.icon")
 
 local renderer = {}
+local chart_counter = 0
 
 --- Converts a hex color or named color to a TikZ color expression
 --- @param col string
@@ -81,7 +82,7 @@ local function render_node(node, options)
 
     local style_str = ""
     local text_col = "{rgb,255:red,44;green,62;blue,80}"
-    local font_str = (node.depth == 0 or node.depth == 1 or node.style == "card" or is_solid) and ", font=\\bfseries" or ""
+    local font_str = theme.is_bold(node) and ", font=\\bfseries" or ""
 
     if is_solid then
         style_str = string.format("fill=%s", col_tikz)
@@ -439,6 +440,7 @@ renderer.sanitize_for_bookmark = sanitize_for_bookmark
 --- @param root table The AST root node.
 --- @param options table Global options.
 function renderer.render(root, options)
+    chart_counter = chart_counter + 1
     options = options or {}
     local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
     local line_style = options.line or (is_vertical and "elbow" or "curve")
@@ -456,7 +458,7 @@ function renderer.render(root, options)
                 local bm_title = n.options.bookmark or sanitize_for_bookmark(n.text)
                 if bm_title ~= "" then
                     local lvl = base_lvl + n.depth
-                    local dest_name = string.format("mc_node_%d", n.id)
+                    local dest_name = string.format("mc_chart_%d_node_%d", chart_counter, n.id)
                     tex.print(string.format("\\mindchartEmitBookmark{%d}{%s}{%s}", lvl, bm_title, dest_name))
                 end
             end

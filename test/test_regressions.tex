@@ -1,0 +1,22 @@
+\documentclass{article}
+\usepackage[a4paper,landscape,margin=1cm]{geometry}
+\usepackage{hyperref}
+\usepackage{./tex/mindchart}
+\begin{document}
+\begin{mindchart}[bookmarks=true,style=boxed]
+[Root [$x[1]$] [Folded, collapsed [Hidden]] [Capsule, style=capsule]]
+\end{mindchart}
+
+\begin{mindchart}[bookmarks=true,style=underline]
+# Second chart
+  - Bold branch
+    - Explicit card, style=card
+\end{mindchart}
+
+\begin{mindchart}[layout=fishbone,style=boxed]
+# Effect
+  - Category
+    - First line\\Second line\\Third line
+    - Another line\\Second line\\Third line
+\end{mindchart}
+\end{document}

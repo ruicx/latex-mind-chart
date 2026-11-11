@@ -307,6 +307,7 @@ function parser.parse_bracket(input)
     local current_decl = {}
     local brace_level = 0
     local in_node = false
+    local in_math = false
 
     local len = #input
     local i = 1
@@ -325,26 +326,29 @@ function parser.parse_bracket(input)
 
         local c = input:sub(i, i)
 
-        if c == "{" then
+        local escaped = false
+        local previous = i - 1
+        while previous > 0 and input:sub(previous, previous) == "\\" do
+            escaped = not escaped
+            previous = previous - 1
+        end
+        if c == "$" and not escaped then
+            in_math = not in_math
+            if in_node then table.insert(current_decl, c) end
+        elseif c == "{" and not escaped then
             brace_level = brace_level + 1
             if in_node then table.insert(current_decl, c) end
-        elseif c == "}" then
+        elseif c == "}" and not escaped then
             if brace_level > 0 then brace_level = brace_level - 1 end
             if in_node then table.insert(current_decl, c) end
-        elseif c == "[" and brace_level == 0 then
+        elseif c == "[" and brace_level == 0 and not in_math and not escaped then
             -- If we were accumulating text for the parent node, finalize parent's declaration
             if in_node and #current_decl > 0 and #stack > 0 then
                 local parent_node = stack[#stack]
                 if parent_node.text == "" then
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     parent_node.text = text
-                    for k, v in pairs(opts) do parent_node.options[k] = v end
-                    ast.init_badges_and_tags(parent_node)
-                    if opts.name or opts.id then
-                        local n = opts.name or opts.id
-                        ast.named_nodes[n] = parent_node
-                        parent_node.name = n
-                    end
+                    ast.apply_options(parent_node, opts)
                 end
                 current_decl = {}
             end
@@ -360,20 +364,14 @@ function parser.parse_bracket(input)
             in_node = true
             current_decl = {}
 
-        elseif c == "]" and brace_level == 0 then
+        elseif c == "]" and brace_level == 0 and not in_math and not escaped then
             if in_node and #stack > 0 then
                 local node = stack[#stack]
                 -- If this node's text hasn't been set yet, set it from current_decl
                 if node.text == "" and #current_decl > 0 then
                     local text, opts = parse_node_declaration(table.concat(current_decl))
                     node.text = text
-                    for k, v in pairs(opts) do node.options[k] = v end
-                    ast.init_badges_and_tags(node)
-                    if opts.name or opts.id then
-                        local n = opts.name or opts.id
-                        ast.named_nodes[n] = node
-                        node.name = n
-                    end
+                    ast.apply_options(node, opts)
                 end
                 table.remove(stack)
                 current_decl = {}

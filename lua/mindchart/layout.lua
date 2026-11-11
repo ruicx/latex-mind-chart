@@ -402,6 +402,11 @@ end
 --- @param root table Root node (Problem / Effect Head on the right)
 --- @param cfg table Layout parameters
 local function layout_fishbone(root, cfg)
+    ast.traverse_preorder(root, function(node)
+        if node.depth > 2 then
+            error("mindchart: fishbone supports only root, category, and cause levels")
+        end
+    end)
     root.is_fishbone = true
     root.side = "right"
     compute_node_box(root, cfg)
@@ -445,6 +450,11 @@ local function layout_fishbone(root, cfg)
     end
 
     local cause_sep_y = 22.0
+    for _, cat in ipairs(root.children) do
+        for _, cause in ipairs(cat.children) do
+            cause_sep_y = math.max(cause_sep_y, cause.box_height + cfg.sibling_sep)
+        end
+    end
     local cot_60 = 0.57735 -- 1.0 / tan(60 deg)
 
     -- First pass: for each station k, compute required dimensions

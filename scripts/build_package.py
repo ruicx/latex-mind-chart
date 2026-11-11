@@ -7,9 +7,7 @@ and top-level CTAN distribution packages in full compliance with TeX Users Group
 from __future__ import annotations
 
 import argparse
-import shutil
 import sys
-import time
 import zipfile
 from dataclasses import dataclass
 from pathlib import Path
@@ -34,13 +32,13 @@ class PackageConfig:
     root_dir: Path = Path(".")
 
 
-def clean_dist_directory(dist_dir: Path) -> None:
-    """Removes previous build artifacts and recreates the distribution directory.
+def prepare_dist_directory(dist_dir: Path) -> None:
+    """Creates the distribution directory without removing existing files.
 
     Parameters
     ----------
     dist_dir : Path
-        Directory to clean and prepare.
+        Directory in which to create archives.
 
     Returns
     -------
@@ -49,22 +47,12 @@ def clean_dist_directory(dist_dir: Path) -> None:
     Raises
     ------
     OSError
-        If directory removal or creation fails due to filesystem permissions.
+        If directory creation fails due to filesystem permissions.
 
     Notes
     -----
-    Ensures an idempotent and clean build environment before creating new archives.
-    Uses retries to handle transient file locks on Windows systems.
+    Existing files are preserved; archive writers replace only their target ZIP files.
     """
-    if dist_dir.exists():
-        for attempt in range(5):
-            try:
-                shutil.rmtree(dist_dir)
-                break
-            except OSError:
-                if attempt == 4:
-                    raise
-                time.sleep(0.2)
     dist_dir.mkdir(parents=True, exist_ok=True)
 
 
@@ -377,7 +365,7 @@ def main() -> int:
     print(f"Distribution directory: {config.dist_dir.resolve()}")
 
     try:
-        clean_dist_directory(config.dist_dir)
+        prepare_dist_directory(config.dist_dir)
 
         print("\n[1/3] Building TDS archive (mindchart.tds.zip)...")
         tds_zip = build_tds_zip(config)

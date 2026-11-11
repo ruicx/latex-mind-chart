@@ -434,6 +434,8 @@ In multi-tier or complex mind maps, authors can fold secondary branches to prese
 ```
 
 #### Geometry & Alignment:
+
+Fishbone layouts support three levels: problem, category, and cause. Deeper input raises an error. Cause spacing grows with measured node heights to accommodate multiline labels.
 - **Central Spine**: A bold horizontal line runs along $Y = 0$, terminating in a prominent vector arrowhead pointing rightwards into the Problem / Effect head node.
 - **Alternating Category Ribs**: Level 1 branches alternate above and below the spine, angling at an exact $60^\circ$ diagonal pitch pointing towards the head.
 - **Horizontal Cause Attachments**: Level 2 causes branch horizontally to the left of their respective rib, perfectly aligning with either underline rules (`style=classic`) or enclosed cards (`style=boxed`).

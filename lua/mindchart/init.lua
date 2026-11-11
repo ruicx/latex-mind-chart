@@ -84,6 +84,7 @@ function mindchart.prepare(raw_input, opt_str)
         return
     end
 
+    theme.apply(current_ast, current_options)
     measure.init(current_ast, current_options)
     measure.emit_measurement_commands(current_options)
 end
@@ -99,9 +100,6 @@ end
 --- Step 3: Executes layout algorithms and renders TikZ graphic.
 function mindchart.render()
     if not current_ast then return end
-
-    -- Apply theme styling and color propagation
-    theme.apply(current_ast, current_options)
 
     -- Compute geometric layout
     layout.compute(current_ast, current_options)
