@@ -60,16 +60,21 @@ Automated image comparison is not currently enabled.
 
 ## Additional contract coverage
 
-- `unit/test_branch_length.lua` checks opt-in underline endpoint alignment across
-  parents and depths, independent balanced sides, card preservation, and
+- `unit/test_branch_length.lua` checks opt-in node column alignment across
+  parents and depths, independent balanced sides, card stretching, and
   restoring natural widths. `visual/test_branch_length.tex` compares natural and
   equal lengths with real text, including math, left-growing, and balanced maps.
 - The branch-length unit suite also covers 60 combinations of three visual
   styles, four horizontal layout names, and five connector names. It checks
-  emitted path endpoints, unchanged boxed cards, and explicit underline shape
+  emitted path endpoints, aligned card boundaries, and explicit underline shape
   overrides. `integration/test_branch_styles.tex` asserts real measured widths
-  and cross-parent endpoint alignment for all three styles and four connector
-  types, plus boxed charts with explicit underline leaves.
+  and cross-parent start/end alignment for all three styles and four connector
+  types, plus boxed charts with explicit underline leaves. Actual TikZ card
+  widths and both boundaries are checked with a 0.1 pt tolerance.
+- Cross-level routing tests sample the emitted straight, elbow, and cubic
+  geometry (including both tapered ribbon edges) against other visible node
+  boxes in 45 style/layout/connector combinations. Recomputing with alignment
+  disabled must clear the special route.
 - `unit/test_contracts.lua` checks finite positive dimensions and pairwise node
   separation for five layouts and three styles, using varying synthetic sizes.
   It also checks aliases, single-node charts, folded roots, visible subtree

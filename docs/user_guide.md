@@ -59,13 +59,18 @@ Options can be supplied as comma-separated key-value pairs in the environment ar
 
 #### Equal Branch Lengths
 
-Set `equal_branch_length=true` to align all visible terminal underline rules
-across the entire tree to one outer edge, including leaves under different
-parents or at different depths. Shorter rules extend to the outermost leaf's
-edge; measured text and card sizes are preserved. Internal underline siblings
-also share a common width. In `balanced` / `mindmap` layouts, left and right
-leaf endpoints are aligned separately. A collapsed underline node is treated
-as a visible leaf; its hidden descendants do not affect alignment.
+Set `equal_branch_length=true` to align both the starts and ends of nodes in
+horizontal columns. Internal nodes at the same depth share the widest measured
+node width at that depth. All visible leaves share one final column and its
+widest measured width, including leaves under different parents or at different
+depths. Shallower leaves move outward, lengthening their connectors. Cards and
+underline rules widen to fit their column; text measurements and the root size
+are preserved. In `balanced` / `mindmap` layouts, left and right columns are
+computed separately. Collapsed nodes are treated as visible leaves; hidden
+descendants do not affect the columns. Cross-level connectors complete their
+turn in the gap beside the parent, then extend horizontally to the leaf, so
+the longer span does not sweep through intervening node columns. This applies
+to all connector styles, including tapered ribbons.
 
 ```latex
 \begin{mindchart}[layout=right, equal_branch_length=true]
@@ -82,11 +87,10 @@ This option applies to horizontal tree layouts (`right`, `left`, `balanced`,
 and `mindmap`); vertical and fishbone layouts retain their existing geometry.
 It does not equalize the curved connector lengths.
 
-Both `style=classic` and `style=underline` support this alignment on their
-underline nodes, with all connector styles (`curve`, `elbow`, `straight`,
-`tapered` / `organic`). `style=boxed` keeps its natural card dimensions;
-alignment applies only to nodes explicitly given `shape=underline`, for
-example through `leaf_style={shape=underline}`.
+All three visual styles (`classic`, `underline`, and `boxed`) support this
+alignment, including mixed cards and underline nodes, with all connector styles
+(`curve`, `elbow`, `straight`, `tapered` / `organic`). In `boxed` charts, shorter
+cards widen rather than retaining their natural width.
 
 ### 2.2 Visual Styles (`style = <name>`)
 

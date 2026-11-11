@@ -2,6 +2,43 @@
 \usepackage[margin=1.5cm]{geometry}
 \usepackage{./tex/mindchart}
 \pagestyle{empty}
+\def\expectedScale{0.65}
+
+% Check actual TikZ card boundaries, including scaling, after each picture.
+\makeatletter
+\newcommand{\CheckCardWidth}[2]{%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{west}}{\pgfpointanchor{mc_node_#1}{east}}%
+  \directlua{assert(math.abs(\number\pgf@x / 65536 - #2 * \expectedScale) < 0.1,
+    "Rendered card width matches the stretched layout")}%
+}
+\newcommand{\CheckCardPair}[2]{%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{west}}{\pgfpointanchor{mc_node_#2}{west}}%
+  \directlua{assert(math.abs(\number\pgf@x / 65536) < 0.1, "Rendered card starts align")}%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{east}}{\pgfpointanchor{mc_node_#2}{east}}%
+  \directlua{assert(math.abs(\number\pgf@x / 65536) < 0.1, "Rendered card ends align")}%
+}
+\newcommand{\CheckAlignedCards}{%
+  \directlua{
+    local nodes = require("mindchart.ast").named_nodes
+    local slash = string.char(92)
+    for _, name in ipairs({"first", "second", "a", "b", "c", "d"}) do
+      local node = nodes[name]
+      if node and node.shape == "card" then
+        tex.sprint(slash .. "CheckCardWidth{" .. node.id .. "}{" .. node.box_width .. "}")
+      end
+    end
+    if nodes.first then
+      tex.sprint(slash .. "CheckCardPair{" .. nodes.first.id .. "}{" .. nodes.second.id .. "}")
+    end
+    if nodes.a.shape == "card" then
+      for _, name in ipairs({"b", "c", "d"}) do
+        tex.sprint(slash .. "CheckCardPair{" .. nodes.a.id .. "}{" .. nodes[name].id .. "}")
+      end
+    end
+  }%
+}
+\makeatother
+\tikzset{execute at end picture=\CheckAlignedCards}
 
 % Exercise real measurement and rendering for each style/connector combination.
 \newcommand{\CheckBranchStyle}[2]{%
@@ -10,17 +47,23 @@
     mindchart.prepare([==[[Root
       [First, name=first [Short, name=a] [Longer label, name=b]]
       [Second group, name=second [X, name=c]]
+      [Shallow, name=d, shape=card]
     ]]==], "style=#1,line=#2,equal_branch_length=true,scale=0.65")
   }%
   \directlua{
     local ast = require("mindchart.ast")
     local a, b, c = ast.named_nodes.a, ast.named_nodes.b, ast.named_nodes.c
     assert(a.width > 0 and b.width > a.width, "Real text dimensions recorded")
+    for _, node in ipairs({a, b, c, ast.named_nodes.d}) do
+      assert(math.abs(node.x - a.x) < 0.01, "Leaf starts align across parents and depths")
+      assert(math.abs(node.box_width - a.box_width) < 0.01, "Leaf widths are unified")
+      assert(node.box_width >= node.width + 8, "Measured content fits")
+    end
+    local first, second = ast.named_nodes.first, ast.named_nodes.second
+    assert(first.x == second.x and first.box_width == second.box_width, "Internal card columns align")
     if "#1" == "boxed" then
-      for _, node in ipairs({a, b, c, ast.named_nodes.first, ast.named_nodes.second}) do
-        assert(node.shape == "card", "Boxed nodes remain cards")
-        assert(math.abs(node.box_width - node.width - 16) < 0.01, "Natural card width preserved")
-      end
+      assert(a.shape == "card" and b.shape == "card" and c.shape == "card")
+      assert(a.box_width > a.width + 16, "Short cards are stretched")
     else
       assert(a.shape == "underline" and b.shape == "underline" and c.shape == "underline")
       assert(math.abs(a.x + a.box_width - b.x - b.box_width) < 0.01, "Sibling endpoints align")
@@ -40,6 +83,7 @@
 }
 
 \section*{Boxed style with explicit underline leaves}
+\def\expectedScale{1}
 \begin{mindchart}[style=boxed,leaf_style={shape=underline},line=straight,equal_branch_length=true]
 # Root
   - First

@@ -23,6 +23,7 @@ local DEFAULT_CONFIG = {
 --- @param node table
 --- @param cfg table
 local function compute_node_box(node, cfg)
+    node.branch_turn_x = nil
     local sh = node.shape or (node.style == "underline" and "underline" or (node.depth == 0 and "capsule" or "card"))
 
     local px, py = cfg.pad_x_line, cfg.pad_y_line
@@ -156,45 +157,40 @@ local function compute_subtree_heights(node, cfg)
     node.subtree_height = math.max(node.box_height, children_height)
 end
 
---- Equalizes underline widths within one sibling group before positioning.
---- @param children table
---- @param cfg table
-local function equalize_branch_widths(children, cfg)
-    if not cfg.equal_branch_length then return end
-    local width = 0
-    for _, child in ipairs(children) do
-        if child.shape == "underline" or (not child.shape and child.style == "underline") then
-            width = math.max(width, child.box_width)
-        end
-    end
-    for _, child in ipairs(children) do
-        if child.shape == "underline" or (not child.shape and child.style == "underline") then
-            child.box_width = width
-        end
-    end
-end
-
---- Extends visible terminal underline rules to the outermost leaf on each side.
+--- Aligns horizontal node columns, with all visible leaves in a common last column.
 --- @param root table
 --- @param cfg table
-local function align_leaf_ends(root, cfg)
+local function align_branch_columns(root, cfg)
     if not cfg.equal_branch_length then return end
-    local leaves, ends = {}, {}
+    local groups = {
+        left = {nodes = {}, widths = {}, last = 0},
+        right = {nodes = {}, widths = {}, last = 0},
+    }
     ast.traverse_visible(root, function(node)
-        local underline = node.shape == "underline" or (not node.shape and node.style == "underline")
-        if node ~= root and underline and (#node.children == 0 or node.collapsed) then
-            table.insert(leaves, node)
-            local outer = node.side == "left" and -node.x or node.x + node.box_width
-            ends[node.side] = math.max(ends[node.side] or -math.huge, outer)
-        end
+        if node == root then return end
+        local group = groups[node.side]
+        table.insert(group.nodes, node)
+        group.last = math.max(group.last, node.depth)
+        -- Index zero collects leaves, including collapsed nodes, regardless of depth.
+        local column = (#node.children == 0 or node.collapsed) and 0 or node.depth
+        group.widths[column] = math.max(group.widths[column] or 0, node.box_width)
     end)
-    for _, node in ipairs(leaves) do
-        if node.side == "left" then
-            local right = node.x + node.box_width
-            node.x = -ends.left
-            node.box_width = right - node.x
-        else
-            node.box_width = ends.right - node.x
+    for side, group in pairs(groups) do
+        local direction = side == "left" and -1 or 1
+        local edge = side == "left" and root.x or root.x + root.box_width
+        local starts = {}
+        for depth = 1, group.last do
+            starts[depth] = edge + direction * cfg.level_sep
+            local width = group.widths[depth == group.last and 0 or depth]
+            edge = starts[depth] + direction * width
+        end
+        for _, node in ipairs(group.nodes) do
+            local column = (#node.children == 0 or node.collapsed) and group.last or node.depth
+            node.box_width = group.widths[column == group.last and 0 or column]
+            node.x = starts[column] - (side == "left" and node.box_width or 0)
+            if column > node.parent.depth + 1 then
+                node.branch_turn_x = starts[node.parent.depth + 1]
+            end
         end
     end
 end
@@ -214,8 +210,6 @@ local function position_subtree(node, start_x, start_y, direction, cfg)
     end
 
     if #node.children == 0 or node.collapsed then return end
-
-    equalize_branch_widths(node.children, cfg)
 
     -- Total height occupied by children
     local total_children_h = 0
@@ -308,7 +302,6 @@ local function layout_balanced(root, cfg)
 
     -- Position Right Subtrees
     if #right_children > 0 then
-        equalize_branch_widths(right_children, cfg)
         local right_total_h = 0
         for i, c in ipairs(right_children) do
             right_total_h = right_total_h + c.subtree_height + (i > 1 and cfg.sibling_sep or 0)
@@ -324,7 +317,6 @@ local function layout_balanced(root, cfg)
 
     -- Position Left Subtrees
     if #left_children > 0 then
-        equalize_branch_widths(left_children, cfg)
         local left_total_h = 0
         for i, c in ipairs(left_children) do
             left_total_h = left_total_h + c.subtree_height + (i > 1 and cfg.sibling_sep or 0)
@@ -337,7 +329,7 @@ local function layout_balanced(root, cfg)
             current_y = current_y - c.subtree_height - cfg.sibling_sep
         end
     end
-    align_leaf_ends(root, cfg)
+    align_branch_columns(root, cfg)
 end
 
 --- Single-direction layout (growing rightwards or leftwards).
@@ -353,7 +345,7 @@ local function layout_unidirectional(root, direction, cfg)
     root.y = 0.0
 
     position_subtree(root, root.x, 0.0, direction, cfg)
-    align_leaf_ends(root, cfg)
+    align_branch_columns(root, cfg)
 end
 
 --- Recursively computes the subtree bounding width for all nodes in vertical layout.

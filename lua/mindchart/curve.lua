@@ -178,18 +178,25 @@ function curve.generate_tapered_path(parent, child, line_width)
         xc_eff = xc + (sign * 1.5)
     end
 
-    local dx = xc_eff - xp_eff
+    local curve_end_x = child.branch_turn_x or xc_eff
+    local dx = curve_end_x - xp_eff
     local c1x = xp_eff + (dx * 0.5)
-    local c2x = xc_eff - (dx * 0.5)
+    local c2x = curve_end_x - (dx * 0.5)
+    local extension = ""
+    if child.branch_turn_x then
+        extension = string.format(" -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt)",
+            xc_eff, yc + w1, xc_eff, yc - w1)
+    end
 
     local ribbon_fill = string.format(
-        "\\fill[fill=%s] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- cycle;",
+        "\\fill[fill=%s] (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt)%s -- (%.2fpt, %.2fpt) .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt) -- cycle;",
         col,
         xp_eff, yp + w0,
         c1x, yp + w0,
         c2x, yc + w1,
-        xc_eff, yc + w1,
-        xc_eff, yc - w1,
+        curve_end_x, yc + w1,
+        extension,
+        curve_end_x, yc - w1,
         c2x, yc - w1,
         c1x, yp - w0,
         xp_eff, yp - w0
@@ -300,6 +307,22 @@ function curve.generate_path(parent, child, line_style, line_width)
 
     if line_style == "tapered" or line_style == "organic" then
         return curve.generate_tapered_path(parent, child, line_width)
+    elseif child.branch_turn_x then
+        local turn_x = child.branch_turn_x
+        local mid_x = (xp + turn_x) / 2.0
+        local approach
+        local corners = ""
+        if line_style == "elbow" then
+            corners = ", rounded corners=3pt"
+            approach = string.format(" -- (%.2fpt, %.2fpt) |- (%.2fpt, %.2fpt)", mid_x, yp, turn_x, yc)
+        elseif line_style == "straight" then
+            approach = string.format(" -- (%.2fpt, %.2fpt)", turn_x, yc)
+        else
+            approach = string.format(" .. controls (%.2fpt, %.2fpt) and (%.2fpt, %.2fpt) .. (%.2fpt, %.2fpt)",
+                mid_x, yp, mid_x, yc, turn_x, yc)
+        end
+        return string.format("\\draw[draw=%s, line width=%.2fpt%s] (%.2fpt, %.2fpt)%s -- (%.2fpt, %.2fpt);",
+            col, lw, corners, xp, yp, approach, x_end, y_end)
     elseif line_style == "elbow" then
         local mid_x = (xp + xc) / 2.0
         if is_underline(child) then

@@ -1,4 +1,4 @@
--- Whole-tree underline endpoint alignment and opt-in layout behavior.
+-- Whole-tree node column alignment and opt-in layout behavior.
 package.path = "./lua/?.lua;" .. package.path
 
 local ast = require("mindchart.ast")
@@ -32,11 +32,11 @@ for _, mode in ipairs({"right", "left", "balanced", "mindmap"}) do
         local root, options = prepare(mode, enabled)
         local a, _, box, b, medium = table.unpack(root.children)
         assert(a.width == 10, "Measured text width is preserved")
-        assert(box.box_width == box.width + 16, "Card keeps its natural width")
+        assert(box.box_width >= box.width + 16, "Card fits its measured content")
         assert(a.children[1].box_width == a.children[2].box_width, "Nested sibling lines equal")
         assert(b.box_width == medium.box_width, "Other siblings equal")
         if mode == "balanced" or mode == "mindmap" then
-            assert(b.box_width < a.box_width, "Balanced sides have independent maximum widths")
+            assert(b.box_width < root.children[2].box_width, "Balanced sides have independent leaf widths")
         end
         local endpoints = {}
         ast.traverse_visible(root, function(node)
@@ -52,11 +52,19 @@ for _, mode in ipairs({"right", "left", "balanced", "mindmap"}) do
         end)
         local _, _, _, _, ending = curve.get_anchors(a, a.children[1])
         assert(ending == endpoints[a.side], "Rendered rule reaches the tree endpoint")
+        assert(a.children[1].x == box.x and a.children[1].box_width == box.box_width,
+            "Leaves across depths and shapes share both boundaries")
+        local direction = box.side == "left" and -1 or 1
+        local parent_edge = box.side == "left" and root.x or root.x + root.box_width
+        assert(box.branch_turn_x == parent_edge + direction * 28,
+            "Cross-level connector finishes turning in the gap beside its parent")
+        assert(a.children[1].branch_turn_x == nil, "Adjacent-column connectors keep their usual routing")
         local xp, _, xc = curve.get_anchors(a, a.children[1])
         assert(math.abs(xp - xc) == 28, "Descendants start beyond the extended rule")
         options.equal_branch_length = false
         layout.compute(root, options)
         assert(a.box_width == 18, "Recomputation restores natural width")
+        assert(box.branch_turn_x == nil, "Recomputation clears the cross-level route")
     end
 end
 
@@ -135,34 +143,42 @@ for _, style in ipairs({"classic", "underline", "boxed"}) do
             end)
             options.equal_branch_length = true
             layout.compute(root, options)
-            local endpoints, leaves, extended = {}, 0, false
+            local endpoints, starts, columns, leaves, extended = {}, {}, {}, 0, false
             ast.traverse_visible(root, function(node)
                 local before = natural[node.id]
-                if style == "boxed" then
-                    assert(node.shape ~= "underline", "Boxed defaults have no underline rules")
-                    assert(node.x == before.x and node.y == before.y and node.box_width == before.width,
-                        "Boxed layout remains unchanged with every connector")
-                elseif node.shape == "underline" and #node.children == 0 then
+                assert(node.box_width >= before.width, "Alignment never shrinks a node")
+                if node ~= root then
+                    local key = node.side .. ":" .. node.depth
+                    if columns[key] then
+                        assert(node.x == columns[key].x and node.box_width == columns[key].box_width,
+                            "Nodes at the same depth share both column boundaries")
+                    else
+                        columns[key] = node
+                    end
+                else
+                    assert(node.box_width == before.width, "Root width is preserved")
+                end
+                if #node.children == 0 then
                     leaves = leaves + 1
-                    local _, _, _, _, x, y = curve.get_anchors(node.parent, node)
+                    local x = node.side == "left" and node.x or node.x + node.box_width
                     if endpoints[node.side] then
                         assert(x == endpoints[node.side], style .. "/" .. mode .. "/" .. line .. ": leaf ends align")
+                        assert(node.x == starts[node.side], "Leaf starts align across parents")
                     else
                         endpoints[node.side] = x
+                        starts[node.side] = node.x
                     end
-                    -- Check the emitted path's final point, not only the layout anchors.
+                    -- Box connectors stop at the inner boundary; underline paths continue to the outer edge.
+                    local _, _, _, _, path_x, y = curve.get_anchors(node.parent, node)
                     local path = curve.generate_path(node.parent, node, line, 1.2)
-                    local ending = string.format("(%.2fpt, %.2fpt);", x, y)
-                    assert(path:sub(-#ending) == ending, "Connector draws to the aligned endpoint")
-                    assert(node.box_width >= before.width, "Alignment never shortens measured rules")
+                    local ending = string.format("(%.2fpt, %.2fpt);", path_x, y)
+                    if line ~= "tapered" and line ~= "organic" or node.shape == "underline" then
+                        assert(path:sub(-#ending) == ending, "Connector draws to the aligned boundary")
+                    end
                     extended = extended or node.box_width > before.width
-                elseif node.shape ~= "underline" then
-                    assert(node.box_width == before.width, "Card widths are preserved")
                 end
             end)
-            if style ~= "boxed" then
-                assert(leaves == 5 and extended, "Style matrix exercises alignment on every leaf")
-            end
+            assert(leaves == 5 and extended, "Style matrix exercises alignment on every leaf")
         end
     end
 end
@@ -188,3 +204,74 @@ for _, mode in ipairs({"right", "left", "balanced"}) do
     end)
 end
 print("Branch length style and connector matrix passed (60 combinations plus shape overrides).")
+
+-- Sample the emitted connector geometry against other visible node boxes.
+for _, style in ipairs({"classic", "underline", "boxed"}) do
+    for _, mode in ipairs({"right", "left", "balanced"}) do
+        for _, line in ipairs({"curve", "elbow", "straight", "tapered", "organic"}) do
+            local root = parser.parse_markdown([[
+# Root
+  - First, side=right
+    - Short
+    - Longer label
+  - Second group, side=right
+    - X
+  - Shallow, side=right, name=shallow
+]])
+            local options = {style=style, layout=mode, equal_branch_length=true}
+            theme.apply(root, options)
+            ast.traverse_preorder(root, function(node)
+                node.width, node.height, node.depth_pt = #node.text * 8, 10, 2
+            end)
+            layout.compute(root, options)
+            local child = ast.named_nodes.shallow
+            local points = {}
+            for x, y in curve.generate_path(root, child, line, 1.2):gmatch("%(([%-%d%.]+)pt, ([%-%d%.]+)pt%)") do
+                points[#points + 1] = {x=tonumber(x), y=tonumber(y)}
+            end
+            local function check_point(x, y)
+                ast.traverse_visible(root, function(node)
+                    if node ~= root and node ~= child then
+                        assert(x <= node.x or x >= node.x + node.box_width
+                            or y <= node.y - node.box_height/2 or y >= node.y + node.box_height/2,
+                            style .. "/" .. mode .. "/" .. line .. ": cross-level path must avoid other nodes")
+                    end
+                end)
+            end
+            local function check_line(a, b)
+                for step = 0, 100 do
+                    local t = step/100
+                    check_point(a.x*(1-t) + b.x*t, a.y*(1-t) + b.y*t)
+                end
+            end
+            local function check_cubic(a, b, c, d)
+                for step = 0, 100 do
+                    local t = step/100
+                    local u = 1-t
+                    check_point(u^3*a.x + 3*u^2*t*b.x + 3*u*t^2*c.x + t^3*d.x,
+                        u^3*a.y + 3*u^2*t*b.y + 3*u*t^2*c.y + t^3*d.y)
+                end
+            end
+            if line == "straight" then
+                check_line(points[1], points[2])
+                check_line(points[2], points[3])
+            elseif line == "elbow" then
+                local corner = {x=points[2].x, y=points[3].y}
+                check_line(points[1], points[2])
+                check_line(points[2], corner)
+                check_line(corner, points[3])
+                check_line(points[3], points[4])
+            else
+                check_cubic(points[1], points[2], points[3], points[4])
+                check_line(points[4], points[5])
+                if line == "tapered" or line == "organic" then
+                    check_line(points[5], points[6])
+                    check_line(points[6], points[7])
+                    check_cubic(points[7], points[8], points[9], points[10])
+                    if points[11] then check_line(points[11], points[12]) end
+                end
+            end
+        end
+    end
+end
+print("Cross-level connector collision tests passed (45 combinations).")
