@@ -57,6 +57,37 @@ Options can be supplied as comma-separated key-value pairs in the environment ar
 | `org` / `down` / `vertical` | Organizational Chart / Downward Tree (root centered at top, branches descending downwards with orthogonal elbow bus lines). | No |
 | `fishbone` / `ishikawa` | Ishikawa Cause-and-Effect / Fishbone diagram (head on the right, bold central spine, alternating 60° diagonal ribs, horizontal cause branches). | No |
 
+#### Equal Branch Lengths
+
+Set `equal_branch_length=true` to align all visible terminal underline rules
+across the entire tree to one outer edge, including leaves under different
+parents or at different depths. Shorter rules extend to the outermost leaf's
+edge; measured text and card sizes are preserved. Internal underline siblings
+also share a common width. In `balanced` / `mindmap` layouts, left and right
+leaf endpoints are aligned separately. A collapsed underline node is treated
+as a visible leaf; its hidden descendants do not affect alignment.
+
+```latex
+\begin{mindchart}[layout=right, equal_branch_length=true]
+# Computer Science
+  - Data Structures
+    - Arrays
+    - Linked Lists
+    - Queues \& Stacks
+\end{mindchart}
+```
+
+The default is `equal_branch_length=false`, which keeps natural rule lengths.
+This option applies to horizontal tree layouts (`right`, `left`, `balanced`,
+and `mindmap`); vertical and fishbone layouts retain their existing geometry.
+It does not equalize the curved connector lengths.
+
+Both `style=classic` and `style=underline` support this alignment on their
+underline nodes, with all connector styles (`curve`, `elbow`, `straight`,
+`tapered` / `organic`). `style=boxed` keeps its natural card dimensions;
+alignment applies only to nodes explicitly given `shape=underline`, for
+example through `leaf_style={shape=underline}`.
+
 ### 2.2 Visual Styles (`style = <name>`)
 
 | Value | Visual Appearance |

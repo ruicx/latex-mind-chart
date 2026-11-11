@@ -1,0 +1,59 @@
+\documentclass{article}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{./tex/mindchart}
+\pagestyle{empty}
+
+% Exercise real measurement and rendering for each style/connector combination.
+\newcommand{\CheckBranchStyle}[2]{%
+  \par\noindent\texttt{style=#1, line=#2}\par
+  \directlua{
+    mindchart.prepare([==[[Root
+      [First, name=first [Short, name=a] [Longer label, name=b]]
+      [Second group, name=second [X, name=c]]
+    ]]==], "style=#1,line=#2,equal_branch_length=true,scale=0.65")
+  }%
+  \directlua{
+    local ast = require("mindchart.ast")
+    local a, b, c = ast.named_nodes.a, ast.named_nodes.b, ast.named_nodes.c
+    assert(a.width > 0 and b.width > a.width, "Real text dimensions recorded")
+    if "#1" == "boxed" then
+      for _, node in ipairs({a, b, c, ast.named_nodes.first, ast.named_nodes.second}) do
+        assert(node.shape == "card", "Boxed nodes remain cards")
+        assert(math.abs(node.box_width - node.width - 16) < 0.01, "Natural card width preserved")
+      end
+    else
+      assert(a.shape == "underline" and b.shape == "underline" and c.shape == "underline")
+      assert(math.abs(a.x + a.box_width - b.x - b.box_width) < 0.01, "Sibling endpoints align")
+      assert(math.abs(a.x + a.box_width - c.x - c.box_width) < 0.01, "Cross-parent endpoints align")
+    end
+  }%
+  \par\medskip
+}
+
+\begin{document}
+\foreach \chartstyle in {classic,underline,boxed}{%
+  \section*{Branch lengths: \chartstyle}
+  \foreach \chartline in {curve,elbow,straight,tapered}{%
+    \CheckBranchStyle{\chartstyle}{\chartline}
+  }
+  \clearpage
+}
+
+\section*{Boxed style with explicit underline leaves}
+\begin{mindchart}[style=boxed,leaf_style={shape=underline},line=straight,equal_branch_length=true]
+# Root
+  - First
+    - Short, name=a
+    - Longer label, name=b
+  - Second group
+    - X, name=c
+\end{mindchart}
+\directlua{
+  local nodes = require("mindchart.ast").named_nodes
+  for _, node in ipairs({nodes.a, nodes.b, nodes.c}) do
+    assert(node.shape == "underline", "Explicit underline overrides boxed style")
+    assert(math.abs(node.x + node.box_width - nodes.a.x - nodes.a.box_width) < 0.01,
+      "Explicit underline endpoints align after real measurement")
+  end
+}
+\end{document}

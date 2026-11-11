@@ -1,0 +1,91 @@
+\documentclass{article}
+\usepackage[margin=1.5cm]{geometry}
+\usepackage{./tex/mindchart}
+\pagestyle{empty}
+\begin{document}
+
+\section*{Natural branch lengths (default)}
+\begin{mindchart}[layout=right, scale=0.78]
+# Computer Science
+  - Data Structures
+    - Linear
+      - Arrays
+      - Linked Lists
+      - Queues \& Stacks
+    - Non-Linear
+      - Binary Trees
+      - Heaps
+      - Graphs
+  - Algorithms
+    - Sorting
+      - QuickSort $O(n\log n)$
+      - MergeSort
+    - Searching
+      - Binary Search
+      - BFS / DFS
+\end{mindchart}
+
+\newpage
+\section*{Aligned leaf endpoints across the entire tree}
+\begin{mindchart}[layout=right, equal_branch_length=true, scale=0.78]
+# Computer Science
+  - Data Structures
+    - Linear
+      - Arrays
+      - Linked Lists
+      - Queues \& Stacks
+    - Non-Linear
+      - Binary Trees
+      - Heaps
+      - Graphs
+  - Algorithms
+    - Sorting
+      - QuickSort $O(n\log n)$
+      - MergeSort
+    - Searching
+      - Binary Search
+      - BFS / DFS
+\end{mindchart}
+
+\newpage
+\section*{Aligned leaf endpoints: left}
+\begin{mindchart}[layout=left, equal_branch_length=true, scale=0.78]
+# Computer Science
+  - Data Structures
+    - Linear
+      - Arrays
+      - Linked Lists
+      - Queues \& Stacks
+    - Non-Linear
+      - Binary Trees
+      - Heaps
+      - Graphs
+  - Algorithms
+    - Sorting
+      - QuickSort $O(n\log n)$
+      - MergeSort
+    - Searching
+      - Binary Search
+      - BFS / DFS
+\end{mindchart}
+
+\newpage
+\section*{Aligned endpoints: independent left and right sides}
+\begin{mindchart}[layout=balanced, style=underline, equal_branch_length=true, scale=0.72]
+# Computing
+  - Data Structures, side=right
+    - Arrays
+    - Queues \& Stacks
+  - Algorithms, side=right
+    - Sorting
+      - QuickSort $O(n\log n)$
+      - MergeSort
+    - Searching
+  - Theory, side=left
+    - Logic
+    - Complexity
+  - Tools, side=left
+    - Editor
+    - Compiler
+\end{mindchart}
+\end{document}

@@ -156,6 +156,49 @@ local function compute_subtree_heights(node, cfg)
     node.subtree_height = math.max(node.box_height, children_height)
 end
 
+--- Equalizes underline widths within one sibling group before positioning.
+--- @param children table
+--- @param cfg table
+local function equalize_branch_widths(children, cfg)
+    if not cfg.equal_branch_length then return end
+    local width = 0
+    for _, child in ipairs(children) do
+        if child.shape == "underline" or (not child.shape and child.style == "underline") then
+            width = math.max(width, child.box_width)
+        end
+    end
+    for _, child in ipairs(children) do
+        if child.shape == "underline" or (not child.shape and child.style == "underline") then
+            child.box_width = width
+        end
+    end
+end
+
+--- Extends visible terminal underline rules to the outermost leaf on each side.
+--- @param root table
+--- @param cfg table
+local function align_leaf_ends(root, cfg)
+    if not cfg.equal_branch_length then return end
+    local leaves, ends = {}, {}
+    ast.traverse_visible(root, function(node)
+        local underline = node.shape == "underline" or (not node.shape and node.style == "underline")
+        if node ~= root and underline and (#node.children == 0 or node.collapsed) then
+            table.insert(leaves, node)
+            local outer = node.side == "left" and -node.x or node.x + node.box_width
+            ends[node.side] = math.max(ends[node.side] or -math.huge, outer)
+        end
+    end)
+    for _, node in ipairs(leaves) do
+        if node.side == "left" then
+            local right = node.x + node.box_width
+            node.x = -ends.left
+            node.box_width = right - node.x
+        else
+            node.box_width = ends.right - node.x
+        end
+    end
+end
+
 --- Positions a subtree in the specified horizontal direction (1 for right, -1 for left).
 --- @param node table
 --- @param start_x number
@@ -171,6 +214,8 @@ local function position_subtree(node, start_x, start_y, direction, cfg)
     end
 
     if #node.children == 0 or node.collapsed then return end
+
+    equalize_branch_widths(node.children, cfg)
 
     -- Total height occupied by children
     local total_children_h = 0
@@ -263,6 +308,7 @@ local function layout_balanced(root, cfg)
 
     -- Position Right Subtrees
     if #right_children > 0 then
+        equalize_branch_widths(right_children, cfg)
         local right_total_h = 0
         for i, c in ipairs(right_children) do
             right_total_h = right_total_h + c.subtree_height + (i > 1 and cfg.sibling_sep or 0)
@@ -278,6 +324,7 @@ local function layout_balanced(root, cfg)
 
     -- Position Left Subtrees
     if #left_children > 0 then
+        equalize_branch_widths(left_children, cfg)
         local left_total_h = 0
         for i, c in ipairs(left_children) do
             left_total_h = left_total_h + c.subtree_height + (i > 1 and cfg.sibling_sep or 0)
@@ -290,6 +337,7 @@ local function layout_balanced(root, cfg)
             current_y = current_y - c.subtree_height - cfg.sibling_sep
         end
     end
+    align_leaf_ends(root, cfg)
 end
 
 --- Single-direction layout (growing rightwards or leftwards).
@@ -305,6 +353,7 @@ local function layout_unidirectional(root, direction, cfg)
     root.y = 0.0
 
     position_subtree(root, root.x, 0.0, direction, cfg)
+    align_leaf_ends(root, cfg)
 end
 
 --- Recursively computes the subtree bounding width for all nodes in vertical layout.
@@ -941,6 +990,7 @@ function layout.compute(root, options)
     for k, v in pairs(DEFAULT_CONFIG) do cfg[k] = v end
     if options.sibling_sep then cfg.sibling_sep = tonumber(options.sibling_sep) or cfg.sibling_sep end
     if options.level_sep then cfg.level_sep = tonumber(options.level_sep) or cfg.level_sep end
+    cfg.equal_branch_length = options.equal_branch_length == true or options.equal_branch_length == "true"
 
     if mode == "balanced" or mode == "mindmap" then
         layout_balanced(root, cfg)
