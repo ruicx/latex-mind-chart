@@ -1,0 +1,33 @@
+\documentclass{article}
+\usepackage{hyperref}
+\usepackage{./tex/mindchart}
+\begin{document}
+\begin{mindchart}[layout=left,style=boxed,bookmarks=true,max_width=3cm]
+# First
+  - Fold, name=fold, collapsed, color=red
+    - Hidden, name=hidden
+  - Visible, name=visible
+\boundary{hidden}{Hidden boundary}
+\boundary{fold}{Visible boundary}
+\summary{hidden}{hidden}{Hidden summary}
+\rel{hidden}{visible}{Hidden relation}
+\rel{fold}{visible}{Visible relation}
+\end{mindchart}
+\directlua{
+  local ast = require('mindchart.ast')
+  assert(ast.boundaries[1].box == nil, 'hidden boundary survived rendering')
+  assert(ast.boundaries[2].box, 'visible boundary disappeared')
+}
+\begin{mindchart}
+# Second
+  - Fresh, name=fresh
+\end{mindchart}
+\directlua{
+  local ast = require('mindchart.ast')
+  assert(ast.named_nodes.fold == nil and ast.named_nodes.hidden == nil)
+  assert(next(ast.boundaries) == nil and next(ast.relationships) == nil and next(ast.summaries) == nil)
+  assert(ast.named_nodes.fresh.style == 'card' and ast.named_nodes.fresh.side == 'right')
+  assert(ast.named_nodes.fresh.max_width == nil and ast.named_nodes.fresh.is_multiline == false)
+  assert(ast.named_nodes.fresh.collapsed == false and ast.named_nodes.fresh.color ~= 'red')
+}
+\end{document}

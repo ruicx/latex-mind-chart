@@ -42,7 +42,10 @@ assertions now live beside the corresponding module tests rather than in a gener
 regression file. Layout unit tests use synthetic dimensions; only integration
 tests prove actual TeX measurement behavior. The measurement fixture compares
 single-line and multiline dimensions against independently typeset expected boxes
-with a 0.01 pt tolerance. It does not prove every final TikZ shape fits its contents.
+with a 0.01 pt tolerance. The render-bounds fixture additionally compares actual TikZ cardinal-anchor distances
+against layout dimensions for rectangular and rounded cards, wrapping, multiline
+labels, and scaling, with a 0.1 pt tolerance. Other shapes and compound decorations
+still require visual inspection.
 
 ## Visual inspection
 
@@ -53,7 +56,35 @@ generated PDFs with Poppler and inspect every affected page:
 pdftoppm -png -r 150 build/test/visual/test_markdown.pdf build/test/markdown_preview
 ```
 
-Automated image comparison is not currently enabled. Broader geometry combinations,
-invalid-input contracts, and folded overlay interactions remain future coverage.
+Automated image comparison is not currently enabled.
+
+## Additional contract coverage
+
+- `unit/test_contracts.lua` checks finite positive dimensions and pairwise node
+  separation for five layouts and three styles, using varying synthetic sizes.
+  It also checks aliases, single-node charts, folded roots, visible subtree
+  enclosure, relationship anchors, bookmark options, and state isolation.
+- Hidden overlay checks cover relationships, summaries, and boundaries in four
+  tree layouts. Boundary recomputation is tested across folding and unfolding.
+- Parser tests compare both syntax forms with grouped commas, math brackets,
+  escaped dollars, nested TeX groups, line breaks, CRLF, tabs, node decorations,
+  all options in a representative declaration, and all three overlay types.
+- `integration/test_state_isolation.tex` exercises real measurement and rendering
+  across consecutive charts with different direction, width, style, folding,
+  bookmarks, and overlays.
+- Packaging tests check member paths, runtime module and example inclusion,
+  showcase assets, nested archive bytes, preservation of existing files, missing
+  source files, and malformed ZIP rejection.
+
+## Remaining limits
+
+These are representative cases, not a proof for every possible tree. Pixel/image
+baselines are not established; existing showcase images are not golden tests.
+The parser's error contracts for missing delimiters, duplicate node names,
+unknown overlay references, and malformed option values are not documented yet.
+Tests intentionally do not freeze their current accidental behavior. Those
+policies need to be defined before asserting specific rejection or recovery.
+Deep-tree resource limits and all compound-shape geometry combinations are also
+not covered by an exhaustive matrix.
 CI runs the same entry point on Linux, Windows, and macOS and uploads logs and PDFs
 even after test failures.

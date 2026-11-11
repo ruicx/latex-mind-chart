@@ -713,9 +713,10 @@ end
 --- Positions boundary boxes and boundary title badges.
 local function position_boundaries(cfg)
     for _, b in ipairs(ast.boundaries) do
+        b.box = nil
         local from_node = ast.named_nodes[b.from]
         local to_node = ast.named_nodes[b.to] or from_node
-        if from_node then
+        if from_node and ast.is_node_visible(from_node) and ast.is_node_visible(to_node) then
             local nodes_in_range = {}
             if from_node == to_node then
                 table.insert(nodes_in_range, from_node)

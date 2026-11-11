@@ -1,0 +1,41 @@
+\documentclass{article}
+\usepackage{./tex/mindchart}
+\def\expectedScale{1}
+\makeatletter
+\newcommand{\checkChartBounds}{%
+  \directlua{
+    for _, name in ipairs({'root','branch','leaf'}) do
+      local node = require('mindchart.ast').named_nodes[name]
+      tex.sprint(string.char(92)..'checkNodeBounds{'..node.id..'}{'..node.box_width..'}{'..node.box_height..'}')
+    end
+  }%
+}
+\newcommand{\checkNodeBounds}[3]{%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{west}}{\pgfpointanchor{mc_node_#1}{east}}%
+  \directlua{assert(math.abs(\number\pgf@x / 65536 - #2 * \expectedScale) < 0.1, 'rendered width disagrees with layout')}%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{south}}{\pgfpointanchor{mc_node_#1}{north}}%
+  \directlua{assert(math.abs(\number\pgf@y / 65536 - #3 * \expectedScale) < 0.1, 'rendered height disagrees with layout')}%
+}
+\makeatother
+\tikzset{execute at end picture=\checkChartBounds}
+\begin{document}
+\begin{mindchart}[style=boxed,shape=rect,max_width=3cm,align=left]
+# Root, name=root
+  - Bold text with enough words to wrap onto multiple lines, name=branch
+    - Leaf with descenders gyp, name=leaf
+\end{mindchart}
+\par\medskip
+\begin{mindchart}[style=classic,shape=card,align=center]
+# Root, name=root
+  - First line\\Second line, name=branch
+    - Explicit card, name=leaf, style=card
+\end{mindchart}
+\par\medskip
+\def\expectedScale{0.7}
+\begin{mindchart}[style=boxed,shape=rect,scale=0.7]
+# Scaled root, name=root
+  - Scaled branch, name=branch
+    - Scaled leaf, name=leaf
+\end{mindchart}
+\par\medskip
+\end{document}

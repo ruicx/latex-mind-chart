@@ -307,3 +307,31 @@ for _, case in ipairs(cases) do
     local markdown = snapshot(parser.parse_markdown(case[2]))
     assert_eq(bracket, markdown, 'equivalent syntax')
 end
+-- Balanced TeX groups, commas, escaped dollars, and whitespace variants.
+for _, label in ipairs({'{Text, with comma}', '$f(x,y)=x[1]$', '\\textbf{Nested {group}, label}', 'Cost \\$5', 'First\\\\Second'}) do
+    local a = parser.parse_bracket('[Root ['..label..', name=target, color=red]]')
+    local b = parser.parse_markdown('# Root\r\n\t- '..label..', name=target, color=red\r\n')
+    assert_eq(a.children[1].text, b.children[1].text, 'TeX label preserved across syntaxes')
+    assert_eq(a.children[1].options.color, 'red', 'option after TeX text')
+    assert_eq(#a.children[1].children, 0, 'no phantom mathematical children')
+end
+-- Compare every parsed option, including grouped values and derived decorations.
+local declaration = 'Topic, name=t, style=boxed, color=blue, side=left, max_width=3cm, align=right, badge=P1, tag={one,two}, status=Done, icon=star, folded=false'
+local a = parser.parse_bracket('[Root ['..declaration..']]').children[1]
+local b = parser.parse_markdown('# Root\n  - '..declaration).children[1]
+for key, value in pairs(a.options) do assert_eq(value, b.options[key], 'option '..key) end
+for key, value in pairs(b.options) do assert_eq(value, a.options[key], 'reverse option '..key) end
+assert_eq(a.collapsed, false, 'explicit false does not fold')
+assert_eq(a.badge_obj.text, b.badge_obj.text, 'badge equivalence')
+assert_eq(#a.tag_objs, 3, 'two tags and status')
+assert_eq(a.icon_obj.name, b.icon_obj.name, 'icon equivalence')
+local overlay = '\n\\summary[color=red]{a}{b}{Summary {nested}}\n\\rel[bend=15]{a}{b}{Relation}\n\\boundary{a}{b}{Boundary}'
+local snapshots = {}
+for index, input in ipairs({'[Root [A, name=a] [B, name=b]]', '# Root\n  - A, name=a\n  - B, name=b'}) do
+    if index == 1 then parser.parse_bracket(input..overlay) else parser.parse_markdown(input..overlay) end
+    snapshots[index] = {ast.summaries[1].text, ast.summaries[1].from, ast.summaries[1].to,
+        ast.relationships[1].text, ast.relationships[1].options.bend, ast.boundaries[1].title}
+end
+for i, value in ipairs(snapshots[1]) do assert_eq(value, snapshots[2][i], 'overlay equivalence') end
+assert_eq(parser.parse_markdown(''), nil, 'empty Markdown')
+assert_eq(parser.parse_bracket(''), nil, 'empty bracket input')
