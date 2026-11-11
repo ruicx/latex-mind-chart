@@ -1,0 +1,28 @@
+\documentclass{article}
+\usepackage{./tex/mindchart}
+\newsavebox{\expectedbold}
+\newsavebox{\expectedmulti}
+\begin{document}
+\sbox{\expectedbold}{\bfseries Wide branch WWW}
+\sbox{\expectedmulti}{\begin{tabular}{@{}c@{}}\bfseries First line\\\bfseries Second line\end{tabular}}
+\directlua{
+  function checkMeasured(name, boxnumber)
+    local node = require('mindchart.ast').named_nodes[name]
+    local box = tex.box[boxnumber]
+    assert(math.abs(node.width - box.width / 65536) < 0.01, name .. ': width mismatch')
+    assert(math.abs(node.height + node.depth_pt - (box.height + box.depth) / 65536) < 0.01, name .. ': height mismatch')
+  end
+}
+\begin{mindchart}[style=boxed]
+# Root
+  - Wide branch WWW, name=bold
+  - First line\\Second line, name=multi
+\end{mindchart}
+\directlua{checkMeasured('bold', \the\expectedbold); checkMeasured('multi', \the\expectedmulti)}
+\begin{mindchart}[style=underline]
+# Root
+  - Wide branch WWW, name=bold
+  - First line\\Second line, name=multi
+\end{mindchart}
+\directlua{checkMeasured('bold', \the\expectedbold); checkMeasured('multi', \the\expectedmulti)}
+\end{document}

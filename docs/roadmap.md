@@ -182,14 +182,12 @@ To ensure zero regressions across TeX Live updates and platform differences, con
 - **Verification Steps**:
   1. Headless parser unit tests:
      ```pwsh
-     texlua test/test_parser_md.lua
+     python scripts/run_tests.py --group unit
      ```
   2. Test suite compilation:
      ```pwsh
-     lualatex -interaction=nonstopmode -output-directory=test test/test_mvp.tex
-     lualatex -interaction=nonstopmode -output-directory=test test/test_styles.tex
-     lualatex -interaction=nonstopmode -output-directory=test test/test_adv.tex
-     lualatex -interaction=nonstopmode -output-directory=test test/test_markdown.tex
+     python scripts/run_tests.py --group integration
+     python scripts/run_tests.py --group visual
      ```
 
 #### 2.5.2 CTAN Distribution Packaging

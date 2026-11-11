@@ -78,7 +78,9 @@
 \let\boundary\undefined
 \NewDocumentCommand{\boundary}{ O{} m m m }{}
 
-\newenvironment{mindchart}[1][]{%
+% Do not scan past the opening line for optional arguments: the next line
+% must reach the Lua input callback before TeX tokenizes it.
+\NewDocumentEnvironment{mindchart}{!O{}}{%
     \directlua{mindchart.start_env([==[#1]==])}%
 }{%
     \directlua{mindchart.finish_env()}%

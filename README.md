@@ -60,13 +60,13 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
 \end{mindchart}
 ```
 
-![Markdown Logic Chart Showcase](test/markdown_preview-1.png)
+![Markdown Logic Chart Showcase](docs/showcases/markdown_preview-1.png)
 
 ---
 
 ### 2. Balanced Map (Underline Style) & Pure Heading Hierarchy
 
-![Balanced Map and Boxed Headings Showcase](test/markdown_preview-2.png)
+![Balanced Map and Boxed Headings Showcase](docs/showcases/markdown_preview-2.png)
 
 ---
 
@@ -169,3 +169,9 @@ For in-depth specifications and guides, refer to the `docs/` directory:
 ## 📄 License
 
 This project is licensed under the [MIT License](LICENSE).
+
+## Development verification / 开发验证
+
+Run `python scripts/run_tests.py` to execute all checks. See [the test guide](test/README.md) for prerequisites, groups, and visual inspection. Generated files are stored in `build/test/`.
+
+运行 `python scripts/run_tests.py` 执行全部检查。依赖工具、测试分组和视觉检查说明见[测试指南](test/README.md)。生成文件保存在 `build/test/`。

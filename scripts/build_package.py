@@ -108,7 +108,7 @@ def collect_doc_files(root_dir: Path) -> list[Path]:
 
     Notes
     -----
-    Includes README.md, LICENSE, and files under the docs/ directory.
+    Includes README.md, LICENSE, documentation, and preserved showcase images.
     """
     candidates: list[Path] = [
         root_dir / "README.md",
@@ -118,6 +118,7 @@ def collect_doc_files(root_dir: Path) -> list[Path]:
     docs_dir = root_dir / "docs"
     if docs_dir.exists() and docs_dir.is_dir():
         candidates.extend(sorted(docs_dir.glob("*.md")))
+        candidates.extend(sorted((docs_dir / "showcases").glob("*.png")))
 
     result: list[Path] = []
     for c in candidates:
@@ -151,7 +152,7 @@ def collect_test_examples(root_dir: Path) -> list[Path]:
     -----
     Only source *.tex files are collected; ephemeral build logs and auxiliary files are omitted.
     """
-    test_dir = root_dir / "test"
+    test_dir = root_dir / "test" / "visual"
     if not test_dir.exists() or not test_dir.is_dir():
         raise FileNotFoundError(f"Test directory not found: {test_dir}")
 
@@ -257,7 +258,7 @@ def build_ctan_zip(cfg: PackageConfig, tds_zip: Path) -> Path:
       - mindchart.lua
       - lua/mindchart/*.lua
       - docs/*.md
-      - test/*.tex
+      - test/visual/*.tex
       - mindchart.tds.zip
     """
     ctan_zip_path = cfg.dist_dir / f"{cfg.package_name}.zip"
@@ -355,7 +356,7 @@ def main() -> int:
 
     Notes
     -----
-    Coordinates directory cleaning, TDS archive generation, and CTAN bundle packaging.
+    Coordinates output directory preparation and TDS and CTAN archive generation.
     """
     args = parse_arguments()
     config = PackageConfig(dist_dir=args.dist_dir)

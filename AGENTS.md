@@ -55,11 +55,10 @@ mind_chart/
 │       ├── theme.lua       # Palette definitions, hex colors, branch color inheritance
 │       └── renderer.lua    # 4-pass TikZ code generator
 └── test/
-    ├── test_mvp.tex        # Basic MVP logic chart & balanced map
-    ├── test_styles.tex     # Visual styles (classic, boxed, underline), lines, and themes
-    ├── test_adv.tex        # Overlays (\summary curly brackets, \rel dashed curved arrows)
-    ├── test_markdown.tex   # Markdown indented lists, math formulas, balanced maps
-    └── test_parser_md.lua  # Standalone headless unit test suite for AST parser
+    ├── README.md           # Test coverage and execution guide
+    ├── unit/               # Headless Lua and Python tests
+    ├── integration/        # Real TeX measurement, input, and installed usage
+    └── visual/             # Representative rendering examples
 ```
 
 ---
@@ -90,41 +89,19 @@ mind_chart/
 
 ## 4. Verification & Testing Workflow
 
-Before committing any modifications, run the following verification steps:
+Before committing modifications, run the unified verification command from any directory:
 
-1. **Run Headless Parser Unit Tests**:
-   ```pwsh
-   texlua test/test_parser_md.lua
-   ```
-   Must exit with code 0 and report `ALL PARSER UNIT TESTS PASSED!`.
+```pwsh
+python scripts/run_tests.py
+```
 
-2. **Compile LaTeX Test Suites with LuaLaTeX**:
-   ```pwsh
-   lualatex -interaction=nonstopmode -output-directory=test test/test_mvp.tex
-   lualatex -interaction=nonstopmode -output-directory=test test/test_styles.tex
-   lualatex -interaction=nonstopmode -output-directory=test test/test_adv.tex
-   lualatex -interaction=nonstopmode -output-directory=test test/test_markdown.tex
-   lualatex -interaction=nonstopmode -output-directory=test test/test_vertical.tex
-   ```
-   All test files must compile cleanly with exit code 0.
+It runs Lua and Python unit tests, Ruff and ty, two-pass LuaLaTeX integration and visual compilation, packaging, and installation into an isolated TEXMF tree. Every selected check must pass. Logs, PDFs, and archives are written under `build/test/`.
 
-3. **Inspect Rendered Visual Previews**:
-   Convert the generated PDFs to high-resolution PNGs and inspect with `read_file`:
-   ```pwsh
-   pdftoppm -png -r 150 test/test_markdown.pdf test/markdown_preview
-   ```
+Use `--group unit`, `--group integration`, `--group visual`, or `--group package` for focused checks. See `test/README.md` for coverage and prerequisites. Visual compilation does not certify appearance: inspect changed examples separately, for example:
 
-4. **Verify Build Scripts & Packaging**:
-   Lint and type-check packaging scripts:
-   ```pwsh
-   uvx ruff check scripts/build_package.py
-   uvx ty check scripts/build_package.py
-   ```
-   Generate distribution archives:
-   ```pwsh
-   python scripts/build_package.py
-   ```
-   Must exit with code 0 and generate `dist/mindchart.tds.zip` and `dist/mindchart.zip`.
+```pwsh
+pdftoppm -png -r 150 build/test/visual/test_markdown.pdf build/test/markdown_preview
+```
 
 ---
 

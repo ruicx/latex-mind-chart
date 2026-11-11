@@ -1,0 +1,13 @@
+\documentclass{article}
+\usepackage{./tex/mindchart}
+\begin{document}
+\begin{mindchart}
+# First root
+  - Child, name=child
+\end{mindchart}
+\directlua{assert(require('mindchart.ast').named_nodes.child.text == 'Child')}
+\begin{mindchart}
+[Second root [Bracket child, name=child]]
+\end{mindchart}
+\directlua{assert(require('mindchart.ast').named_nodes.child.text == 'Bracket child')}
+\end{document}

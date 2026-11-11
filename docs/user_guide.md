@@ -514,3 +514,7 @@ Encloses a specific topic subtree (or a range of sibling subtrees) within a soft
 - `line_width=<pt>`: Border stroke width (default: `0.8`).
 - `title_style=<pill|card>`: Title badge visual style (`pill` for solid colored pill with white text; `card` for white card with colored border and text; default: `pill`).
 - `title_pos=<top_left|top_center|top_right|bottom_left>`: Placement of the title badge on the boundary frame (default: `top_left`).
+
+### Environment opening line
+
+Place optional settings directly after `\begin{mindchart}` on the same line. Put tree content on the following line. Settings may be omitted entirely; Markdown and bracket input are both supported without an optional argument.
