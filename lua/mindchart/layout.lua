@@ -582,6 +582,10 @@ local function layout_fishbone(root, cfg)
                 cause.attach_y = cy
                 cause.x = attach_x - cause.box_width - 6.0
                 cause.y = cy
+                -- Align the rendered underline, rather than the text center, with the rib.
+                if (cause.shape or cause.style) == "underline" then
+                    cause.y = cy + (cause.box_height / 2.0)
+                end
 
                 if cause.x < min_x_all then min_x_all = cause.x end
             end
@@ -616,6 +620,10 @@ local function layout_fishbone(root, cfg)
                 cause.attach_y = cy
                 cause.x = attach_x - cause.box_width - 6.0
                 cause.y = cy
+                -- Align the rendered underline, rather than the text center, with the rib.
+                if (cause.shape or cause.style) == "underline" then
+                    cause.y = cy + (cause.box_height / 2.0)
+                end
 
                 if cause.x < min_x_all then min_x_all = cause.x end
             end

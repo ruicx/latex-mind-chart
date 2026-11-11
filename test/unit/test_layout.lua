@@ -216,6 +216,38 @@ assert(cause1.attach_x > cause1.x + cause1.box_width, "Cause connects horizontal
 local cause_path = curve.generate_path(c1, cause1, "straight", 1.2)
 assert(cause_path:find("%-%-"), "Cause branch connects horizontally")
 
+-- Horizontal cause connectors must end on the rib at their rendered height.
+for _, style in ipairs({"classic", "boxed"}) do
+    local fish = parser.parse_markdown(md_input12)
+    mock_dims(fish)
+    for i, cat in ipairs(fish.children) do
+        for j, cause in ipairs(cat.children) do
+            cause.height = 10.0 + i + j * 11.0
+        end
+        cat.children[2].options.shape = style == "classic" and "card" or "underline"
+    end
+    theme.apply(fish, { layout = "fishbone", style = style })
+    layout.compute(fish, { layout = "fishbone" })
+    for _, cat in ipairs(fish.children) do
+        for _, cause in ipairs(cat.children) do
+            local path = curve.generate_path(cat, cause, "straight", 1.2)
+            local x1, y1, x2, y2 = path:match(
+                "%(([%d%.%-]+)pt, ([%d%.%-]+)pt%) %-%- %(([%d%.%-]+)pt, ([%d%.%-]+)pt%)"
+            )
+            x1, y1, x2, y2 = tonumber(x1), tonumber(y1), tonumber(x2), tonumber(y2)
+            assert(x1 and y1 and x2 and y2, "Cause path has numeric endpoints")
+            assert_eq(y1, y2, "Cause connector remains horizontal")
+            local rib_x = cat.rib_start_x + (y2 - cat.rib_start_y)
+                * (cat.joint_x - cat.rib_start_x) / (cat.joint_y - cat.rib_start_y)
+            assert(math.abs(x2 - rib_x) < 0.02,
+                "Cause connector ends on the " .. cat.side .. " rib at its rendered height")
+            assert(math.abs(y2 - cause.attach_y) < 0.01,
+                "Rendered cause height matches its layout attachment")
+            assert(x1 < x2, "Cause connector extends rightwards to the rib")
+        end
+    end
+end
+
 print("Test 12 passed successfully!")
 
 
