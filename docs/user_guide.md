@@ -518,3 +518,111 @@ Encloses a specific topic subtree (or a range of sibling subtrees) within a soft
 ### Environment opening line
 
 Place optional settings directly after `\begin{mindchart}` on the same line. Put tree content on the following line. Settings may be omitted entirely; Markdown and bracket input are both supported without an optional argument.
+
+## 5. Publication Layout and Navigation
+
+### 5.1 Fit the complete chart to the page
+
+Use `fit_width=\linewidth` and/or `fit_height=18cm` to constrain the final
+picture. These limits include nodes, strokes, relationship labels, summaries,
+boundaries, and notes. The package measures the completed TeX picture box and
+uniformly shrinks it with `graphicx`; text and geometry scale together. It never
+enlarges a picture. An explicit `scale` is applied first. Zero leaves an axis
+unconstrained; negative dimensions are rejected.
+
+`min_font_size=6` sets the warning threshold in points for the smallest visible
+main-label font after fitting. This is a warning, not a lower bound that overrides
+the page limits. Badges, relationship labels, and mathematical subscripts are
+excluded from this threshold. For an unreadably small result, shorten labels,
+fold secondary branches, or use a larger page. Fitting does not paginate charts.
+Use `\noindent` before a full-width chart to avoid adding paragraph indentation
+outside the picture box.
+
+### 5.2 Shared styles by hierarchy level
+
+```latex
+\begin{mindchart}[root_style={font=\Large,fill=blue,text_color=white},branch_style={font=\normalsize,shape=card,pad_x=10},leaf_style={font=\small,shape=rect,fill=white}]
+# Architecture
+  - Services
+    - Storage, font=\footnotesize
+\end{mindchart}
+```
+
+`root_style` applies at depth 0, `branch_style` at depth 1, and `leaf_style` at
+depth 2 and deeper, including intermediate topics at those depths. Local node
+options override the corresponding shared options; unspecified values retain
+the existing theme defaults. Notes and overlay labels do not inherit these
+hierarchy styles.
+
+Use these groups for `font`, `style`, `shape`, `color`, `fill`, `draw`,
+`text_color`, `line_width`, `pad_x`, `pad_y`, `max_width`, and `align`.
+Padding and border width use numeric points. Padding controls space inside a
+node; existing chart-wide `level_sep` and `sibling_sep` control tree spacing.
+Shape, fill, and border options apply to boxed shapes; underline nodes retain
+their line-based appearance. Custom fonts are applied before measuring and
+again when rendering. Default bold styling remains; add `\mdseries` to `font`
+when regular weight is desired. Keep identifiers and navigation options on
+individual nodes.
+
+### 5.3 Overlay avoidance
+
+Enable `avoid_overlaps=true` to place overlay rectangles clear of visible tree
+nodes and previously placed overlay labels, with a 6pt gap. It is opt-in so
+existing manually arranged diagrams retain their layout.
+
+- Boundary titles move outward; their boundary edge follows the title.
+- Summary brackets and cards move outward together, preserving coverage of all
+  visible descendants. Repeated summaries occupy successive outer positions.
+- Relationship labels are measured by TeX and assigned separate lanes above
+  the diagram. Relationships use named node endpoints and orthogonal segments
+  in this mode. `max_width` can constrain label wrapping.
+- Use `\rel[avoid=false,bend=30,...]` to retain the existing curved path and
+  manual label placement for an individual relationship.
+
+Automatic relationship lanes replace `bend`, `pos`, `side`, `sloped`, and label
+padding settings; they use centered labels with 2pt padding. Color, line style,
+fill, and endpoint anchors remain available. This is rectangle avoidance,
+not a general graph router: connector segments can still cross other branches
+or nodes, and overlapping boundary backgrounds are permitted. It can increase
+chart dimensions, so combine it with page fitting and inspect dense diagrams.
+
+### 5.4 Independent notes
+
+```latex
+\note[name=assumption,side=bottom,max_width=4cm]{model}{Assumes normalized input.}
+```
+
+Put `\note[options]{tree_node_name}{text}` on its own line inside the chart,
+after the tree. Both Markdown and bracket syntax support it. The note is an
+independent card, with no parent connector. `side=left|right|top|bottom`
+(default `right`) and numeric `gap` (default 18pt) specify the initial placement
+relative to the named tree node. It moves farther in that direction if occupied
+rectangles block that position, even without `avoid_overlaps`.
+
+Notes support node text formatting, shapes, badges, icons, tags, and links.
+They inherit the anchor's color unless overridden. Named notes can be
+relationship endpoints and `node_ref` targets. A note anchored to a hidden
+descendant of a collapsed topic is also hidden. Unknown anchors are errors;
+anchors must be tree nodes, not other notes or overlays. Notes do not contain
+child trees or contribute to the tree's PDF bookmark hierarchy.
+
+### 5.5 PDF links and references
+
+Load `\usepackage{hyperref}` (optionally with `hidelinks`) before using links.
+Link options affect the main topic text and preserve its measured dimensions.
+
+| Node option | Destination |
+| :--- | :--- |
+| `href={https://example.com}` | External URL. Brace URLs containing commas. |
+| `ref=sec:methods` | A document `\label{sec:methods}`, using `\hyperref`. |
+| `target=appendix-anchor` | A `\hypertarget{appendix-anchor}{...}` destination. |
+| `node_ref=encoder` | A visible named topic or note in the same chart. |
+| `label=overview-anchor` | Defines a document-wide hyperlink destination on this topic. |
+
+Choose one of `href`, `ref`, `target`, or `node_ref` per node. If more than one
+is supplied, that order determines precedence. `node_ref` rejects missing or
+hidden targets. Chart-local destinations are scoped by chart instance, so
+reusing topic names in different charts does not create duplicate destinations.
+Explicit `label` values must remain unique throughout the document. Compile
+twice to resolve document references. Without `hyperref`, ordinary diagrams
+still compile; requesting a link reports a package error.

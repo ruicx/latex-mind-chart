@@ -188,6 +188,19 @@ end
 --- @param options table Global options (e.g. { theme="rainbow", style="classic" })
 function theme.apply(root, options)
     options = options or {}
+    local parse_options = require("mindchart.parser").parse_options
+    local layers = {
+        parse_options(options.root_style), parse_options(options.branch_style),
+        parse_options(options.leaf_style),
+    }
+    ast.traverse_preorder(root, function(node)
+        local defaults = layers[math.min(node.depth + 1, 3)]
+        for key, value in pairs(defaults) do
+            if node.options[key] == nil then node.options[key] = value end
+        end
+        node.style = node.options.style
+        ast.init_badges_and_tags(node)
+    end)
     local is_vertical = (options.layout == "org" or options.layout == "down" or options.layout == "vertical" or options.layout == "tree_down")
     local is_fishbone = (options.layout == "fishbone" or options.layout == "ishikawa" or options.layout == "cause_effect")
     local theme_name = options.theme or "rainbow"
@@ -306,6 +319,19 @@ function theme.apply(root, options)
         s.node.shape = theme.normalize_shape(s.options.shape or s.node.options.shape or global_shape) or "card"
     end
 
+    -- Notes inherit the anchor color without joining its tree.
+    for _, note in ipairs(ast.notes) do
+        local anchor = ast.named_nodes[note.from]
+        if not anchor then error("mindchart: unknown note anchor " .. note.from) end
+        if anchor.is_note or anchor.is_summary or anchor.is_boundary then
+            error("mindchart: note anchor must be a tree node")
+        end
+        note.node.annotation_anchor = anchor
+        note.node.color = note.options.color or anchor.color or root_color
+        note.node.style = note.options.style or "card"
+        note.node.shape = theme.normalize_shape(note.options.shape) or "card"
+    end
+
     -- Style boundary nodes
     for _, b in ipairs(ast.boundaries) do
         local from_node = ast.named_nodes[b.from]
@@ -378,6 +404,13 @@ end
 function theme.is_bold(node)
     return node.depth == 0 or node.depth == 1 or node.style == "card"
         or node.options.fill == "solid" or node.options.fill == true
+end
+
+--- Returns identical font declarations for measurement and rendering.
+--- @param node table
+--- @return string
+function theme.font(node)
+    return (theme.is_bold(node) and "\\bfseries " or "") .. (node.options.font or "")
 end
 
 return theme

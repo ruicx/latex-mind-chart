@@ -29,7 +29,7 @@ The roadmap is organized into iterative phases designed to elevate `mindchart` i
 │ Phase 9 │ Fishbone / Ishikawa Diagram    │ Layout     │ layout=fish   │ Completed (v2.0.0)  │
 ├─────────┼────────────────────────────────┼────────────┼───────────────┼─────────────────────┤
 │ Phase 10│ Horizontal Timeline & Roadmap  │ Layout     │ layout=timeline│ Planned (v2.1.0)    │
-│ Phase 11│ Clickable Links & References   │ Interactivity│ href=..., ref=│ Planned (v2.1.0)    │
+│ Phase 11│ Clickable Links & References   │ Interactivity│ href=..., ref=│ Implemented         │
 │ Phase 12│ Beamer Presentation Overlays   │ Presentation│ <1->, <+->    │ Planned (v2.1.0)    │
 │ Phase 13│ Tree Matrix & Grid Layout      │ Layout     │ layout=matrix │ Planned (v2.2.0)    │
 └─────────┴────────────────────────────────┴────────────┴───────────────┴─────────────────────┘
@@ -312,14 +312,16 @@ Technical roadmaps, project schedules, and historical evolutions naturally arran
 
 ---
 
-### 2.11 Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`)
+### 2.11 Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`) *(Implemented)*
 
 #### 2.11.1 Motivation & Visual Paradigm
 In electronic documents, mind maps often serve as visual tables of contents. Authors should be able to click on any node to jump to an external URL or an internal document section / figure / equation.
 
 #### 2.11.2 Integration with `hyperref`
 - `href=<url>`: Wraps the node text in `\href{url}{text}`.
-- `ref=<label>` / `target=<label>`: Links the node to an internal LaTeX anchor via `\hyperlink{label}{text}`.
+- `ref=<label>`: Links to a document `\label` via `\hyperref[label]{text}`.
+- `target=<anchor>`: Links to an explicit PDF destination via `\hyperlink`.
+- `node_ref=<name>`: Links to a visible named node in the same chart.
 - Nodes can also define an internal label `label=<id>` automatically registered with `\hypertarget{id}{...}`.
 
 ---
@@ -371,6 +373,23 @@ The roadmap features are implemented iteratively following our test-driven verif
 
 ### v2.1.0 Feature Pipeline *(Planned Future Milestones)*
 - [ ] **Milestone 10 (Phase 10)**: Horizontal Timeline & Roadmap Layout (`layout=timeline`).
-- [ ] **Milestone 11 (Phase 11)**: Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`).
+- [x] **Milestone 11 (Phase 11)**: Clickable Hyperlinks & Internal Cross-References (`href=...`, `ref=...`).
 - [ ] **Milestone 12 (Phase 12)**: Beamer Presentation Uncovering & Overlays (`<overlay>`).
 - [ ] **Milestone 13 (Phase 13)**: Tree Matrix & Grid Layout (`layout=matrix`).
+
+
+## Publication Work Completed
+
+The current source implements the approved P0/P1 publication scope:
+
+- Complete-picture fitting with `fit_width`, `fit_height`, and a main-label
+  readability warning.
+- Opt-in overlay rectangle avoidance, including outer relationship-label lanes.
+- Shared root, branch, and deeper-topic styles with exact font measurement.
+- Independent `\note` cards anchored to tree topics, with folding visibility.
+- External links, document references, explicit anchors, and chart-local links.
+
+See User Guide section 5 for the implemented interface and limits. General
+connector obstacle avoidance and floating topics with their own child trees
+remain outside this iteration. Timeline, Beamer overlays, and matrix layouts
+remain planned.

@@ -1,0 +1,56 @@
+\documentclass{article}
+\usepackage{./tex/mindchart}
+\usepackage{hyperref}
+\newsavebox{\chartbox}
+\newsavebox{\fontbox}
+\makeatletter
+\newcommand{\checkPublicationNode}[2]{%
+  \pgfpointdiff{\pgfpointanchor{mc_node_#1}{west}}{\pgfpointanchor{mc_node_#1}{east}}%
+  \directlua{assert(math.abs(\number\pgf@x/65536-#2)<0.1, 'styled rendered width disagrees with layout')}%
+}
+\newcommand{\checkPublicationBounds}{%
+  \directlua{
+    for _, name in ipairs({'a','n'}) do
+      local n = require('mindchart.ast').named_nodes[name]
+      tex.sprint(string.char(92)..'checkPublicationNode{'..n.id..'}{'..n.box_width..'}')
+    end
+  }%
+}
+\makeatother
+\begin{document}
+\section{Destination}\label{sec:target}
+\sbox{\fontbox}{\bfseries\Large Measured branch}
+\tikzset{execute at end picture=\checkPublicationBounds}
+\setbox\chartbox=\hbox\bgroup%
+\begin{mindchart}[fit_width=180pt,fit_height=100pt,avoid_overlaps=true,branch_style={font=\Large,fill=yellow,pad_x=12},leaf_style={font=\small,shape=rect}]
+# Publication, name=root
+  - Measured branch, name=a, ref=sec:target
+    - Formula $\hat{y}=Wx+b$, name=leaf
+  - Website, name=b, href={https://example.com/path?q=1&v=2}
+\summary{a}{b}{Overview}
+\summary{a}{b}{Second overview}
+\boundary{a}{A long boundary title}
+\note[name=n,side=right,font=\small,max_width=3cm,node_ref=leaf]{a}{A wrapped independent note pointing to a leaf}
+\rel{a}{b}{Dependency}
+\end{mindchart}%
+\egroup
+\directlua{
+  local box = tex.box[\the\chartbox]
+  assert(box.width <= 180*65536+2, 'fit width exceeded: ' .. box.width/65536)
+  assert(box.height+box.depth <= 100*65536+2, 'fit height exceeded')
+  local ast = require('mindchart.ast')
+  local expected = tex.box[\the\fontbox]
+  assert(math.abs(ast.named_nodes.a.width-expected.width/65536)<0.01, 'styled font measurement')
+  assert(ast.named_nodes.a.font_size == 14.4, 'font size tracked')
+  assert(ast.notes[1].node.height > 10, 'note measured by TeX')
+}
+\usebox{\chartbox}
+\par
+\tikzset{execute at end picture={}}
+\begin{mindchart}[fit_width=\linewidth,fit_height=4cm,scale=0.8]
+# Repeated names, name=root
+  - First, name=a, node_ref=b
+  - Second, name=b, target=external
+\end{mindchart}
+\hypertarget{external}{External anchor}
+\end{document}

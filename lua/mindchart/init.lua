@@ -111,4 +111,28 @@ end
 --- Registers a user-defined theme palette.
 mindchart.define_theme = theme.define_theme
 
+mindchart.store_font = measure.store_font
+
+--- Shrinks the complete rendered TeX box to the requested limits.
+--- @param box_num number
+--- @param width number Maximum width in scaled points, zero for unconstrained.
+--- @param height number Maximum total height in scaled points, zero for unconstrained.
+function mindchart.fit(box_num, width, height)
+    if width < 0 or height < 0 then error("mindchart: fit limits must be nonnegative") end
+    local box = tex.box[box_num]
+    local factor = 1
+    if width > 0 and box.width > 0 then factor = math.min(factor, width / box.width) end
+    if height > 0 and box.height + box.depth > 0 then
+        factor = math.min(factor, height / (box.height + box.depth))
+    end
+    -- Round down so numerical formatting never enlarges beyond a requested limit.
+    factor = math.floor(factor * 65536) / 65536
+    local font_size = measure.minimum_font() * (tonumber(current_options.scale) or 1) * factor
+    local minimum = tonumber(current_options.min_font_size) or 6
+    if font_size < minimum then
+        tex.print(string.format("\\PackageWarning{mindchart}{Fitted main-label font %.2fpt is below %.2fpt}%%", font_size, minimum))
+    end
+    tex.print(string.format("\\mindchartUseFit{%.10f}%%", factor))
+end
+
 return mindchart

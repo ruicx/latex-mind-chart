@@ -78,6 +78,16 @@ Automated image comparison is not currently enabled.
 
 ## Remaining limits
 
+Publication coverage is split across `unit/test_publication.lua` (overlay
+rectangle separation in five layouts, style precedence, note visibility,
+invalid note anchors, fitting limits), `integration/test_publication.tex`
+(real styled text and rendered node widths, final fitted dimensions, repeated
+chart-local link names), and `visual/test_publication.tex` (Chinese labels,
+deep branches, formulas, repeated summaries, boundaries, notes, and links).
+The Chinese example uses `ctex`, `luatexja`, and the bundled Fandol fonts so it
+does not depend on operating-system Chinese fonts. Inspect the generated PDF;
+the geometric tests do not certify relationship routing or general visual quality.
+
 These are representative cases, not a proof for every possible tree. Pixel/image
 baselines are not established; existing showcase images are not golden tests.
 The parser's error contracts for missing delimiters, duplicate node names,

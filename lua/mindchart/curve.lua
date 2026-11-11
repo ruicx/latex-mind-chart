@@ -440,6 +440,20 @@ function curve.generate_relationship(r, from_node, to_node)
     local to_spec = to_anchor and string.format("(mc_node_%d.%s)", to_node.id, to_anchor)
                               or string.format("(mc_node_%d)", to_node.id)
 
+    if r.lane then
+        local ax, bx = from_node.x + from_node.box_width/2, to_node.x + to_node.box_width/2
+        local label = ""
+        if r.node then
+            local width = r.node.max_width and string.format(", text width=%.2fpt", r.node.width) or ""
+            label = string.format(
+                " \\node[anchor=center, font=\\scriptsize, align=center, inner sep=2pt, fill=%s%s] at (%.2fpt, %.2fpt) {%s};",
+                theme.to_tikz_color(opts.fill or "white"), width, r.node.x+r.node.box_width/2, r.node.y, r.text)
+        end
+        return string.format(
+            "\\draw[draw=%s, %s, ->, >=stealth, line width=1.1pt] %s -- (%.2fpt, %.2fpt) -- (%.2fpt, %.2fpt) -- %s;",
+            col, line_type, from_spec, ax, r.lane, bx, r.lane, to_spec) .. label
+    end
+
     -- Label positioning and styling
     local label_code = ""
     if r.text and r.text ~= "" then

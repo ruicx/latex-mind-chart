@@ -153,3 +153,22 @@ For complete technical specifications, mathematical foundations, and implementat
 3. **Long Text Auto-Wrap & Multi-Line Support (`max_width=...`)**: Dynamic TeX box wrapping and newline support.
 4. **Tags & Badges (`tag=...`, `badge=...`)**: Metadata chips, priority markers, and numbering markers.
 5. **Automation & CI**: GitHub Actions multi-platform workflow and TDS packaging for CTAN.
+
+### 3.5 Publication and Navigation Requirements
+
+- Constrain the final chart width and/or total height using exact TeX box
+  dimensions. Shrink uniformly without enlargement; warn when fitted main-label
+  fonts fall below a configurable point-size threshold.
+- Offer opt-in rectangle avoidance for summary cards/brackets, boundary titles,
+  and measured relationship labels. Preserve manual curved relationships as an
+  explicit per-relationship option. General obstacle-free routing is outside
+  this iteration.
+- Apply shared root, first-level, and deeper-topic styles before measurement,
+  with individual node options taking precedence.
+- Support independent measured notes positioned relative to named tree topics,
+  including visibility under folding, without adding them to the tree hierarchy.
+- Support external URLs, document references, explicit PDF anchors, and
+  chart-local named-node links through optional `hyperref` integration.
+- Validate styled measurement against actual TikZ node dimensions and fitted
+  output against both page limits. Include Chinese text and mixed overlays in
+  the visual fixtures.

@@ -35,6 +35,9 @@ jobs:
             iftex
             lm
             amsfonts
+            ctex
+            luatexja
+            fandol
 
       - name: Set up Python
         uses: actions/setup-python@v5

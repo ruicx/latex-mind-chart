@@ -7,9 +7,41 @@
 
 \RequirePackage{tikz}
 \RequirePackage{xcolor}
+\RequirePackage{graphicx}
 \usetikzlibrary{shapes.geometric,shapes.misc}
 
 \newbox\mindchart@box
+\newbox\mindchart@fitbox
+\newdimen\mindchart@fitwidth
+\newdimen\mindchart@fitheight
+
+% Fit the completed picture, including strokes, labels, and all overlays.
+\newcommand{\mindchartFitBegin}[2]{%
+    \mindchart@fitwidth=#1\relax%
+    \mindchart@fitheight=#2\relax%
+    \setbox\mindchart@fitbox=\hbox\bgroup%
+}
+\newcommand{\mindchartFitEnd}{%
+    \egroup%
+    \directlua{mindchart.fit(\the\mindchart@fitbox, \number\mindchart@fitwidth, \number\mindchart@fitheight)}%
+}
+\newcommand{\mindchartUseFit}[1]{\scalebox{#1}{\usebox{\mindchart@fitbox}}}
+\newcommand{\mindchartRecordFont}[1]{\directlua{mindchart.store_font(#1, \f@size)}}
+
+% Link text keeps its ordinary measured dimensions. hyperref is opt-in.
+\newcommand{\mindchartDestination}[2]{%
+    \ifcsname hypertarget\endcsname\hypertarget{#1}{#2}\else#2\fi%
+}
+\newcommand{\mindchartLink}[3]{%
+    \ifcsname hyperref\endcsname%
+        \csname mindchart@link@#1\endcsname{#2}{#3}%
+    \else%
+        \PackageError{mindchart}{Links require hyperref}{Load hyperref in the document preamble.}%
+    \fi%
+}
+\newcommand{\mindchart@link@href}[2]{\href{#1}{#2}}
+\newcommand{\mindchart@link@ref}[2]{\hyperref[#1]{#2}}
+\newcommand{\mindchart@link@target}[2]{\hyperlink{#1}{#2}}
 
 \directlua{
     local f = kpse.find_file("mindchart.lua", "lua") or "./tex/mindchart.lua"
@@ -75,13 +107,15 @@
 % Overlay markers for syntax completion inside environment
 \NewDocumentCommand{\summary}{ O{} m m m }{}
 \NewDocumentCommand{\rel}{ O{} m m m }{}
+\ProvideDocumentCommand{\note}{ O{} m m }{}
 \let\boundary\undefined
 \NewDocumentCommand{\boundary}{ O{} m m m }{}
 
 % Do not scan past the opening line for optional arguments: the next line
 % must reach the Lua input callback before TeX tokenizes it.
 \NewDocumentEnvironment{mindchart}{!O{}}{%
-    \directlua{mindchart.start_env([==[#1]==])}%
+    \directlua{mindchart.start_env("\luaescapestring{\unexpanded{#1}}")}%
+    \ignorespaces
 }{%
     \directlua{mindchart.finish_env()}%
 }

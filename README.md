@@ -170,6 +170,18 @@ For in-depth specifications and guides, refer to the `docs/` directory:
 
 This project is licensed under the [MIT License](LICENSE).
 
+## Publication layout / 文档排版
+
+Publication features include complete-picture fitting (`fit_width`, `fit_height`),
+opt-in overlay avoidance (`avoid_overlaps=true`), hierarchy styles (`root_style`,
+`branch_style`, `leaf_style`), independent `\note` cards, and PDF links (`href`,
+`ref`, `target`, `node_ref`). See [the user guide](docs/user_guide.md#5-publication-layout-and-navigation)
+for syntax and limits, and [the publication example](test/visual/test_publication.tex).
+
+排版功能新增整图尺寸适配、可选的覆盖元素避让、按层级统一样式、独立注释卡片，以及
+网页、文档标签和图内节点链接。用法与限制见[用户指南](docs/user_guide.md#5-publication-layout-and-navigation)，
+中文复杂图示例见[排版示例](test/visual/test_publication.tex)。
+
 ## Development verification / 开发验证
 
 Run `python scripts/run_tests.py` to execute all checks. See [the test guide](test/README.md) for prerequisites, groups, and visual inspection. Generated files are stored in `build/test/`.

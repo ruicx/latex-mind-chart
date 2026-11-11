@@ -10,6 +10,7 @@ ast.named_nodes = {}
 ast.summaries = {}
 ast.relationships = {}
 ast.boundaries = {}
+ast.notes = {}
 
 --- Allocates and returns the next unique integer node ID.
 --- @return number
@@ -164,6 +165,7 @@ function ast.reset_counter()
     ast.summaries = {}
     ast.relationships = {}
     ast.boundaries = {}
+    ast.notes = {}
 end
 
 --- Adds a child node to a parent node, setting depth and parent reference.
@@ -226,6 +228,7 @@ end
 --- @return boolean
 function ast.is_node_visible(node)
     if not node then return false end
+    if node.annotation_anchor and not ast.is_node_visible(node.annotation_anchor) then return false end
     local cur = node.parent
     while cur do
         if cur.collapsed then

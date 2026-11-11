@@ -11,6 +11,34 @@ local icon = require("mindchart.icon")
 local renderer = {}
 local chart_counter = 0
 
+--- Emits a TeX line without adding interword glue to the surrounding document.
+local function emit(command)
+    tex.print(command .. "%")
+end
+
+--- Wraps displayed text in optional PDF links and chart-local destinations.
+local function linked_text(node)
+    local text, opts = node.text, node.options
+    if opts.href then
+        text = string.format("\\mindchartLink{href}{%s}{%s}", opts.href, text)
+    elseif opts.ref then
+        text = string.format("\\mindchartLink{ref}{%s}{%s}", opts.ref, text)
+    elseif opts.target then
+        text = string.format("\\mindchartLink{target}{%s}{%s}", opts.target, text)
+    elseif opts.node_ref then
+        local target = ast.named_nodes[opts.node_ref]
+        if not target or not ast.is_node_visible(target) then
+            error("mindchart: node_ref must name a visible node: " .. opts.node_ref)
+        end
+        text = string.format("\\mindchartLink{target}{mc-link-%d-%d}{%s}", chart_counter, target.id, text)
+    end
+    if node.name then
+        text = string.format("\\mindchartDestination{mc-link-%d-%d}{%s}", chart_counter, node.id, text)
+    end
+    if opts.label then text = string.format("\\mindchartDestination{%s}{%s}", opts.label, text) end
+    return text
+end
+
 --- Converts a hex color or named color to a TikZ color expression
 --- @param col string
 --- @return string
@@ -50,6 +78,7 @@ end
 --- @param options table|nil Global options
 --- @return string
 local function render_node(node, options)
+    local text = linked_text(node)
     local cx = node.x + (node.box_width / 2.0)
     local cy = node.y
     local col_tikz = to_tikz_color(node.color or "#2C3E50")
@@ -82,16 +111,23 @@ local function render_node(node, options)
 
     local style_str = ""
     local text_col = "{rgb,255:red,44;green,62;blue,80}"
-    local font_str = theme.is_bold(node) and ", font=\\bfseries" or ""
+    local font_str = ", font={" .. theme.font(node) .. "}"
 
     if is_solid then
         style_str = string.format("fill=%s", col_tikz)
         text_col = "white"
-        font_str = ", font=\\bfseries"
     else
         local lw = (node.style == "boxed") and "0.8pt" or "1.0pt"
         style_str = string.format("draw=%s, line width=%s, fill=white", col_tikz, lw)
     end
+
+    if node.options.fill and node.options.fill ~= "solid" and node.options.fill ~= true then
+        style_str = style_str .. ", fill=" .. to_tikz_color(node.options.fill)
+        text_col = "{rgb,255:red,44;green,62;blue,80}"
+    end
+    if node.options.draw then style_str = style_str .. ", draw=" .. to_tikz_color(node.options.draw) end
+    if node.options.line_width then style_str = style_str .. ", line width=" .. node.options.line_width .. "pt" end
+    if node.options.text_color then text_col = to_tikz_color(node.options.text_color) end
 
     -- Determine shape option in TikZ
     local shape_opt = "rounded corners=4pt"
@@ -122,7 +158,7 @@ local function render_node(node, options)
             local ty = node.y
             return string.format(
                 "\\node (mc_node_%d) [anchor=center, text=%s%s, inner sep=2pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, text_col, font_str, extra_opts, tx, ty, node.text
+                node.id, text_col, font_str, extra_opts, tx, ty, text
             )
         elseif sh == "hexagon" then
             local hw = node.box_width / 2.0
@@ -140,13 +176,13 @@ local function render_node(node, options)
             )
             local node_cmd = string.format(
                 "\\node (mc_node_%d) [text=%s%s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+                node.id, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, text
             )
             return hex_path .. " " .. node_cmd
         else
             return string.format(
                 "\\node (mc_node_%d) [%s, %s, text=%s%s, minimum width=%.2fpt, minimum height=%.2fpt, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-                node.id, shape_opt, style_str, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, node.text
+                node.id, shape_opt, style_str, text_col, font_str, node.box_width, node.box_height, extra_opts, cx, cy, text
             )
         end
     end
@@ -219,7 +255,7 @@ local function render_node(node, options)
     -- 3. Main Text
     table.insert(parts, string.format(
         "\\node [anchor=west, text=%s%s, inner sep=0pt%s] at (%.2fpt, %.2fpt) {%s};",
-        text_col, font_str, extra_opts, x_cur, cy, node.text
+        text_col, font_str, extra_opts, x_cur, cy, text
     ))
     x_cur = x_cur + node.width
 
@@ -459,13 +495,16 @@ function renderer.render(root, options)
                 if bm_title ~= "" then
                     local lvl = base_lvl + n.depth
                     local dest_name = string.format("mc_chart_%d_node_%d", chart_counter, n.id)
-                    tex.print(string.format("\\mindchartEmitBookmark{%d}{%s}{%s}", lvl, bm_title, dest_name))
+                    emit(string.format("\\mindchartEmitBookmark{%d}{%s}{%s}", lvl, bm_title, dest_name))
                 end
             end
         end)
     end
 
-    tex.print(string.format(
+    if options.fit_width or options.fit_height then
+        emit(string.format("\\mindchartFitBegin{%s}{%s}", options.fit_width or "0pt", options.fit_height or "0pt"))
+    end
+    emit(string.format(
         "\\begin{tikzpicture}[baseline=(current bounding box.center), scale=%s, every node/.style={transform shape, outer sep=0pt}]",
         scale
     ))
@@ -474,7 +513,7 @@ function renderer.render(root, options)
     for _, b in ipairs(ast.boundaries) do
         local box_cmd = render_boundary_box(b)
         if box_cmd ~= "" then
-            tex.print(box_cmd)
+            emit(box_cmd)
         end
     end
 
@@ -482,14 +521,14 @@ function renderer.render(root, options)
     for _, b in ipairs(ast.boundaries) do
         local badge_cmd = render_boundary_badge(b)
         if badge_cmd ~= "" then
-            tex.print(badge_cmd)
+            emit(badge_cmd)
         end
     end
 
     -- Pass 1: Draw all connection curves (visible nodes only)
     if root.is_fishbone then
         local root_col = to_tikz_color(root.color or "#2C3E50")
-        tex.print(string.format(
+        emit(string.format(
             "\\draw[draw=%s, line width=2.4pt, ->, >=stealth] (%.2fpt, 0pt) -- (%.2fpt, 0pt);",
             root_col, root.spine_start_x or 0.0, root.spine_end_x or root.x
         ))
@@ -502,20 +541,20 @@ function renderer.render(root, options)
             -- Replace raw hex in path_cmd with TikZ color
             local col_tikz = to_tikz_color(node.color or "#2C3E50")
             path_cmd = path_cmd:gsub("{#[%x%X]+}", col_tikz)
-            tex.print(path_cmd)
+            emit(path_cmd)
         end
     end)
 
     -- Pass 2: Draw all node shapes and labels (visible nodes only)
     ast.traverse_visible(root, function(node)
         local node_cmd = render_node(node, options)
-        tex.print(node_cmd)
+        emit(node_cmd)
 
         -- If node is collapsed, draw fold indicator pill
         if node.collapsed and #node.children > 0 then
             local fold_cmd = render_fold_indicator(node)
             if fold_cmd ~= "" then
-                tex.print(fold_cmd)
+                emit(fold_cmd)
             end
         end
     end)
@@ -527,12 +566,16 @@ function renderer.render(root, options)
         if from_node and to_node and ast.is_node_visible(from_node) and ast.is_node_visible(to_node) then
             if s.bracket and s.node then
                 local bracket_cmd = curve.generate_bracket(s.bracket, s.node)
-                tex.print(bracket_cmd)
+                emit(bracket_cmd)
 
                 local s_node_cmd = render_node(s.node, options)
-                tex.print(s_node_cmd)
+                emit(s_node_cmd)
             end
         end
+    end
+
+    for _, note in ipairs(ast.notes) do
+        if note.visible then emit(render_node(note.node, options)) end
     end
 
     -- Pass 4: Draw cross-branch relationships
@@ -541,11 +584,12 @@ function renderer.render(root, options)
         local to_node = ast.named_nodes[r.to]
         if from_node and to_node and ast.is_node_visible(from_node) and ast.is_node_visible(to_node) then
             local rel_cmd = curve.generate_relationship(r, from_node, to_node)
-            tex.print(rel_cmd)
+            emit(rel_cmd)
         end
     end
 
-    tex.print("\\end{tikzpicture}")
+    emit("\\end{tikzpicture}")
+    if options.fit_width or options.fit_height then emit("\\mindchartFitEnd") end
 end
 
 return renderer

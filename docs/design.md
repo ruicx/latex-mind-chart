@@ -193,3 +193,33 @@ Emits clean, high-performance TikZ code to TeX:
 3. **Pass 3**: All summary curly brackets and summary topic cards.
 4. **Pass 4**: All cross-branch relationship curved dashed arrows and annotation badges.
 5. Emits `scale=<factor>` and `transform shape` when requested.
+
+### Publication Extensions
+
+Hierarchy style groups are parsed by the existing option parser and merged into
+node options before theme assignment and measurement. Explicit topic options
+win. `theme.font` supplies the same font declarations to measurement and TikZ.
+The environment passes its optional argument to Lua without expanding font or
+dimension macros. Measurement output suppresses interword glue between commands.
+
+`ast.notes` stores independent note descriptors. Each owns a normal measured
+node and references a tree node through `annotation_anchor`; visibility follows
+that anchor without changing tree parentage. Relationships also own measured
+label nodes. All registries reset between charts.
+
+After ordinary layout, optional rectangle avoidance moves boundary titles and
+summary envelopes outward. Notes always clear occupied rectangles along their
+requested placement direction. Relationship labels occupy separate upper lanes
+in automatic mode; their paths retain named-node clipping. This deterministic
+placement does not solve arbitrary connector intersections or repack the tree.
+
+PDF link wrappers are emitted only for rendered text. Internal node destinations
+include a chart instance identifier. Measurement does not emit hyperlinks or PDF
+destinations. Explicit user anchors remain document-scoped.
+
+When page limits are supplied, TeX captures the complete TikZ picture, including
+overlays, into a box. Lua computes a shrink-only factor from its width and total
+height, rounding downward on TeX's fixed-point grid; `graphicx` applies that
+factor uniformly. The existing TikZ `scale` and `transform shape` remain intact.
+A warning compares visible main-label font sizes against `min_font_size` after
+both scales. No external rendering or layout process is required.

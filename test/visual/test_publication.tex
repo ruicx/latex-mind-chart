@@ -1,0 +1,30 @@
+\documentclass{article}
+\usepackage[a3paper,landscape,margin=15mm]{geometry}
+\usepackage[UTF8,fontset=fandol]{ctex}
+\usepackage[hidelinks]{hyperref}
+\usepackage{./tex/mindchart}
+\pagestyle{empty}
+\begin{document}
+\section*{Publication layout / 技术方案}
+\noindent
+\begin{mindchart}[layout=balanced,fit_width=\linewidth,fit_height=19cm,avoid_overlaps=true,max_width=3cm,root_style={font=\Large,fill=blue,text_color=white},branch_style={font=\normalsize,shape=card,pad_x=10},leaf_style={font=\small,shape=rect,fill=white}]
+# 系统设计, name=root
+  - 数据处理与质量验证, name=data, side=left, tag=v2
+    - 长标题：输入数据的清洗、归一化与完整性检查, name=clean
+    - 特征变换 $z=\frac{x-\mu}{\sigma}$, name=feature
+  - 模型训练, name=model, side=right
+    - 编码器, name=enc
+      - 多层特征融合, name=fusion
+        - 损失函数 $\mathcal{L}(y,\hat{y})$
+    - 分类器, name=classifier
+  - 评估与发布, name=release, side=right, href=https://example.com
+    - 验证集评估, status=Done
+\summary{enc}{classifier}{模型组件}
+\summary{enc}{classifier}{第二组概要}
+\boundary{data}{数据质量要求}
+\boundary{model}{训练模块}
+\note[name=assumption,side=bottom,max_width=4cm,node_ref=clean]{data}{假设条件：输入已完成脱敏。点击可跳转至清洗节点。}
+\rel{feature}{enc}{特征输入}
+\rel{fusion}{release}{模型交付}
+\end{mindchart}
+\end{document}

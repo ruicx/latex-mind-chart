@@ -187,6 +187,7 @@ local function parse_command_invocations(input)
     local summaries = {}
     local relationships = {}
     local boundaries = {}
+    local notes = {}
 
     local pos = 1
     local len = #input
@@ -194,6 +195,7 @@ local function parse_command_invocations(input)
         local s_sum, e_sum = input:find("\\summary", pos, true)
         local s_rel, e_rel = input:find("\\rel", pos, true)
         local s_bnd, e_bnd = input:find("\\boundary", pos, true)
+        local s_note, e_note = input:find("\\note", pos, true)
 
         local next_cmd = nil
         local cmd_type = nil
@@ -210,6 +212,7 @@ local function parse_command_invocations(input)
         check(s_sum, e_sum, "summary")
         check(s_rel, e_rel, "rel")
         check(s_bnd, e_bnd, "boundary")
+        check(s_note, e_note, "note")
 
         if not next_cmd then break end
 
@@ -222,7 +225,11 @@ local function parse_command_invocations(input)
         local arg2, p2 = extract_arg(input, p1)
         local arg3, p3 = extract_arg(input, p2)
 
-        if cmd_type == "boundary" then
+        if cmd_type == "note" then
+            if not arg1 or not arg2 then error("mindchart: note requires anchor and text") end
+            table.insert(notes, {from=trim(arg1), text=trim(arg2), options=opts})
+            pos = p2
+        elseif cmd_type == "boundary" then
             if arg1 then
                 local b_from, b_to, b_title, next_cur
                 if arg3 then
@@ -286,7 +293,23 @@ local function parse_command_invocations(input)
         end
     end
 
-    return summaries, relationships, boundaries
+    return summaries, relationships, boundaries, notes
+end
+
+--- Registers independently positioned notes and measured relationship labels.
+local function process_annotations(notes, relationships)
+    for _, note in ipairs(notes) do
+        note.node = ast.new_node(note.text, note.options)
+        note.node.depth = 2
+        note.node.is_note = true
+        table.insert(ast.notes, note)
+    end
+    for _, rel in ipairs(relationships) do
+        if rel.text ~= "" then
+            rel.node = ast.new_node(rel.text, {font="\\scriptsize", max_width=rel.options.max_width})
+            rel.node.depth = 2
+        end
+    end
 end
 
 --- Parses bracket notation string into an AST tree.
@@ -300,7 +323,7 @@ function parser.parse_bracket(input)
     ast.reset_counter()
 
     -- Extract summaries, relationships, and boundaries first
-    local raw_summaries, raw_rels, raw_boundaries = parse_command_invocations(input)
+    local raw_summaries, raw_rels, raw_boundaries, raw_notes = parse_command_invocations(input)
 
     local stack = {}
     local root = nil
@@ -420,6 +443,7 @@ function parser.parse_bracket(input)
     end
 
     process_overlays(raw_summaries, raw_rels, raw_boundaries)
+    process_annotations(raw_notes, raw_rels)
 
     return root
 end
@@ -439,7 +463,7 @@ function parser.parse_markdown(input)
     ast.reset_counter()
 
     -- Extract overlays (\summary, \rel, and \boundary)
-    local raw_summaries, raw_rels, raw_boundaries = parse_command_invocations(input)
+    local raw_summaries, raw_rels, raw_boundaries, raw_notes = parse_command_invocations(input)
 
     local root = nil
     -- Stack items: { node = Node, indent = number, heading_level = number }
@@ -483,11 +507,11 @@ function parser.parse_markdown(input)
     while line_idx <= #raw_lines do
         local cur_line = raw_lines[line_idx]
         local trimmed = trim(cur_line)
-        if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") then
+        if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") and not trimmed:match("^\\note") then
             while cur_line:match("\\\\%s*$") and line_idx < #raw_lines do
                 local next_line = raw_lines[line_idx + 1]
                 local next_trimmed = trim(next_line)
-                if next_trimmed == "" or next_trimmed:match("^%%") or next_trimmed:match("^\\summary") or next_trimmed:match("^\\rel") or next_trimmed:match("^\\boundary") then
+                if next_trimmed == "" or next_trimmed:match("^%%") or next_trimmed:match("^\\summary") or next_trimmed:match("^\\rel") or next_trimmed:match("^\\boundary") or next_trimmed:match("^\\note") then
                     break
                 end
                 local is_new_bullet = next_trimmed:match("^[%-%*%+]%s+") or next_trimmed:match("^%d+[%.)]%s+") or next_trimmed:match("^#+%s*")
@@ -512,7 +536,7 @@ function parser.parse_markdown(input)
             local trimmed = trim(line)
 
             -- Skip TeX comments or overlay command lines (already extracted)
-            if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") then
+            if not trimmed:match("^%%") and not trimmed:match("^\\summary") and not trimmed:match("^\\rel") and not trimmed:match("^\\boundary") and not trimmed:match("^\\note") then
                 -- Determine if line is a markdown heading (#...) or bullet list item
                 local hashes, h_content = trimmed:match("^(#+)%s*(.*)$")
                 local h_level = hashes and #hashes or 0
@@ -596,6 +620,7 @@ function parser.parse_markdown(input)
     end
 
     process_overlays(raw_summaries, raw_rels, raw_boundaries)
+    process_annotations(raw_notes, raw_rels)
 
     return root
 end

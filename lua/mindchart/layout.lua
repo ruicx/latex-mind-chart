@@ -40,6 +40,8 @@ local function compute_node_box(node, cfg)
         px, py = 5.0, 3.0
     end
 
+    px = tonumber(node.options.pad_x) or px
+    py = tonumber(node.options.pad_y) or py
     local extra_w = 0.0
     local max_h = node.height + node.depth_pt
 
@@ -810,6 +812,124 @@ local function position_boundaries(cfg)
     end
 end
 
+--- Moves a rectangle outward until it clears all occupied rectangles.
+--- @param node table
+--- @param occupied table
+--- @param side string
+local function place_clear(node, occupied, side)
+    local changed = true
+    while changed do
+        changed = false
+        for _, other in ipairs(occupied) do
+            if node.x < other.x + other.box_width + 6 and other.x < node.x + node.box_width + 6
+                and math.abs(node.y - other.y) < (node.box_height + other.box_height) / 2 + 6 then
+                if side == "left" then
+                    node.x = other.x - node.box_width - 6
+                elseif side == "top" then
+                    node.y = other.y + (other.box_height + node.box_height) / 2 + 6
+                elseif side == "bottom" or side == "down" then
+                    node.y = other.y - (other.box_height + node.box_height) / 2 - 6
+                else
+                    node.x = other.x + other.box_width + 6
+                end
+                changed = true
+            end
+        end
+    end
+    table.insert(occupied, node)
+end
+
+--- Places measured overlays outside occupied node and label rectangles.
+--- Relationship labels use separate outer lanes when avoidance is enabled.
+local function position_annotations(root, cfg, options)
+    local avoid = options.avoid_overlaps == true or options.avoid_overlaps == "true"
+    local occupied = {}
+    ast.traverse_visible(root, function(node) table.insert(occupied, node) end)
+    for _, b in ipairs(ast.boundaries) do
+        if b.box and b.node then
+            if avoid then
+                local bottom = b.options.title_pos == "bottom_left"
+                place_clear(b.node, occupied, bottom and "bottom" or "top")
+                if bottom then b.box.y_min = b.node.y else b.box.y_max = b.node.y end
+                b.box.x_min = math.min(b.box.x_min, b.node.x - 8)
+                b.box.x_max = math.max(b.box.x_max, b.node.x + b.node.box_width + 8)
+            else
+                table.insert(occupied, b.node)
+            end
+        end
+    end
+    for _, s in ipairs(ast.summaries) do
+        if s.bracket and ast.is_node_visible(ast.named_nodes[s.from])
+            and ast.is_node_visible(ast.named_nodes[s.to]) then
+            if avoid then
+                local b, n = s.bracket, s.node
+                local envelope
+                if b.side == "down" then
+                    local left = math.min(b.x_left, n.x)
+                    local right = math.max(b.x_right, n.x + n.box_width)
+                    local bottom = n.y - n.box_height / 2
+                    envelope = {x=left, y=(b.y + bottom)/2, box_width=right-left, box_height=b.y-bottom}
+                else
+                    local left = math.min(b.x, n.x)
+                    local right = math.max(b.x, n.x + n.box_width)
+                    local top = math.max(b.y_top, n.y + n.box_height/2)
+                    local bottom = math.min(b.y_bot, n.y - n.box_height/2)
+                    envelope = {x=left, y=(top+bottom)/2, box_width=right-left, box_height=top-bottom}
+                end
+                local x, y = envelope.x, envelope.y
+                place_clear(envelope, occupied, b.side)
+                local dx, dy = envelope.x-x, envelope.y-y
+                n.x, n.y = n.x+dx, n.y+dy
+                if b.side == "down" then b.y = b.y+dy else b.x = b.x+dx end
+            else
+                table.insert(occupied, s.node)
+            end
+        end
+    end
+    for _, note in ipairs(ast.notes) do
+        local anchor, n = ast.named_nodes[note.from], note.node
+        note.visible = ast.is_node_visible(anchor)
+        if note.visible then
+            compute_node_box(n, cfg)
+            local side = note.options.side or "right"
+            if side ~= "left" and side ~= "right" and side ~= "top" and side ~= "bottom" then
+                error("mindchart: note side must be left, right, top, or bottom")
+            end
+            local gap = tonumber(note.options.gap) or 18
+            n.x = anchor.x + (anchor.box_width-n.box_width)/2
+            n.y = anchor.y
+            if side == "right" then n.x = anchor.x+anchor.box_width+gap
+            elseif side == "left" then n.x = anchor.x-n.box_width-gap
+            elseif side == "top" then n.y = anchor.y+(anchor.box_height+n.box_height)/2+gap
+            else n.y = anchor.y-(anchor.box_height+n.box_height)/2-gap end
+            n.side = side
+            place_clear(n, occupied, side)
+        end
+    end
+    for _, rel in ipairs(ast.relationships) do
+        rel.lane = nil
+        local from, to = ast.named_nodes[rel.from], ast.named_nodes[rel.to]
+        if avoid and rel.options.avoid ~= "false" and rel.options.avoid ~= false
+            and ast.is_node_visible(from) and ast.is_node_visible(to) then
+            local top = -math.huge
+            for _, n in ipairs(occupied) do top = math.max(top, n.y+n.box_height/2) end
+            for _, b in ipairs(ast.boundaries) do
+                if b.box then top = math.max(top, b.box.y_max) end
+            end
+            rel.lane = top + 18
+            if rel.node then
+                local n = rel.node
+                n.box_width, n.box_height = n.width+4, n.height+n.depth_pt+4
+                n.x = (from.x+from.box_width/2+to.x+to.box_width/2)/2-n.box_width/2
+                n.y = rel.lane + n.box_height/2
+                table.insert(occupied, n)
+            else
+                table.insert(occupied, {x=0,y=rel.lane,box_width=0,box_height=0})
+            end
+        end
+    end
+end
+
 --- Main layout entry point.
 --- @param root table
 --- @param options table
@@ -842,6 +962,7 @@ function layout.compute(root, options)
 
     -- Position any subtree boundaries
     position_boundaries(cfg)
+    position_annotations(root, cfg, options)
 end
 
 return layout
