@@ -108,10 +108,11 @@ def collect_doc_files(root_dir: Path) -> list[Path]:
 
     Notes
     -----
-    Includes README.md, LICENSE, documentation, and preserved showcase images.
+    Includes both README translations, LICENSE, documentation, and showcase images.
     """
     candidates: list[Path] = [
         root_dir / "README.md",
+        root_dir / "README_zh.md",
         root_dir / "LICENSE",
         root_dir / "AGENTS.md",
     ]
@@ -253,6 +254,7 @@ def build_ctan_zip(cfg: PackageConfig, tds_zip: Path) -> Path:
     CTAN root structure contains a top-level directory named after the package:
     - mindchart/
       - README.md
+      - README_zh.md
       - LICENSE
       - mindchart.sty
       - mindchart.lua

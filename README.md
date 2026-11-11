@@ -1,5 +1,7 @@
 # `mindchart` — Modern XMind-Style Mind Maps for LaTeX
 
+[Chinese README](README_zh.md)
+
 [![CI](https://github.com/ruicx/latex-mind-chart/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ruicx/latex-mind-chart/actions/workflows/ci.yml)
 [![Engine: LuaLaTeX](https://img.shields.io/badge/Engine-LuaLaTeX-blue.svg)](https://www.luatex.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -23,7 +25,7 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
   - **5 Layouts**: Right-expanding logic chart, Left-expanding logic chart, Bi-directional balanced mind map (greedy bin-packing), Downward Organizational Chart (`layout=org` / `layout=down`), and Ishikawa / Fishbone Diagram (`layout=fishbone` / `layout=ishikawa`).
   - **7 Geometric Shapes**: Capsule (`capsule`/`pill`), Card (`card`), Sharp rectangle (`rect`), Diamond (`diamond`/`rhombus`), Hexagon (`hexagon`/`hex`), Ellipse (`ellipse`), Underline rule (`underline`).
   - **3 Visual Styles**: Classic (capsule root, card branches, underline leaves), Boxed (rounded cards), Underline (minimalist).
-  - **3 Line Connectors**: Smooth cubic Bézier S-curves, Rounded orthogonal elbows, Straight lines.
+  - **4 Line Connectors**: Smooth cubic Bézier S-curves, tapered ribbons, rounded orthogonal elbows, and straight lines.
   - **10 Curated Color Themes & Custom Palettes**: `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized`, ad-hoc inline lists (`palette={...}`), and custom defined palettes (`\mindchartDefineTheme`).
 - **✨ Overlays, Annotations & Micro-Icons**:
   - **Native Vector Micro-Icons**: Zero-dependency TikZ micro-glyphs (`icon=check|star|warn|fire|bulb|lock|...`) and LaTeX macro fallbacks.
@@ -70,6 +72,22 @@ By combining the computational power of **Lua 5.3+** with the vector rendering f
 
 ---
 
+### 3. Fishbone / Cause-and-Effect Diagrams
+
+Use `layout=fishbone` (alias `ishikawa`) for three-level diagrams: problem, category,
+and cause. Categories alternate above and below the spine; use `side=top` or
+`side=bottom` on a category to choose its position. Causes use underline rules with
+`style=classic` and cards with `style=boxed`.
+
+![Classic Fishbone Root Cause Analysis](docs/showcases/fishbone_preview-1.png)
+
+![Boxed Fishbone Manufacturing Analysis](docs/showcases/fishbone_preview-2.png)
+
+See the [example source](test/visual/test_fishbone.tex) and
+[fishbone guide](docs/user_guide.md#39-fishbone--cause-and-effect-diagrams-layoutfishbone--layoutishikawa).
+
+---
+
 ## ⚡ Quick Start
 
 ### Requirements
@@ -108,18 +126,64 @@ Save the following as `example.tex` and compile with `lualatex example.tex`:
 
 ## ⚙️ Configuration Reference
 
-Options are passed as comma-separated key-value pairs to `\begin{mindchart}[...]`:
+Pass comma-separated key-value pairs to `\begin{mindchart}[...]` on the opening
+line; put tree content on the following line. Numeric spacing and line widths
+below are in points. Width and fitting options accept TeX dimensions.
+
+### Layout & Input
 
 | Option | Values | Default | Description |
 | :--- | :--- | :---: | :--- |
-| `layout` | `right`, `balanced`, `left`, `org`, `down` | `right` | Overall mind map geometric layout algorithm. |
-| `style` | `classic`, `boxed`, `underline` | `classic` | Visual card / box shape for nodes across hierarchy levels. |
-| `line` | `curve`, `elbow`, `straight` | `curve` | Connector line geometry. |
-| `theme` | `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset`, `solarized` | `rainbow` | Branch palette with automatic color propagation. |
-| `palette` | `{HEX1, HEX2, ...}` | *none* | Ad-hoc inline hex color palette. |
-| `bookmarks`| `true`, `false` | `false` | Generate nested PDF document bookmarks via `hyperref`. |
-| `scale` | `<float>` (e.g. `0.85`, `1.2`) | `1` | Equiproportional scale for coordinates, boxes, and text. |
-| `syntax` | `markdown`, `bracket` | *auto* | Authoring syntax format (auto-detected by default). |
+| `layout` | `right`, `left`, `balanced` / `mindmap`, `org` / `down` / `vertical` / `tree_down`, `fishbone` / `ishikawa` / `cause_effect` | `right` | Tree direction or fishbone layout. Fishbone supports problem, category, and cause levels only. |
+| `syntax` | `auto`, `markdown` / `md`, `bracket` | `auto` | Detect Markdown or bracket input unless explicitly selected. |
+| `equal_branch_length` | `true`, `false` | `false` | Align node starts and ends in horizontal columns; visible leaves share a final column. Applies to `right`, `left`, and `balanced` / `mindmap` only. |
+| `level_sep` | Number | `28`; vertical: `26` | Gap between tree levels. Does not control fishbone ribs. |
+| `sibling_sep` | Number | `14`; vertical: `18` | Gap between sibling subtrees; also contributes to minimum fishbone cause spacing. |
+
+Equal branch lengths align node columns, not curved connector lengths. Balanced
+layouts align each side independently. See [layout details](docs/user_guide.md#21-layout-options-layout--name).
+
+### Style & Text
+
+| Option | Values | Default | Description |
+| :--- | :--- | :---: | :--- |
+| `style` | `classic`, `boxed`, `underline` | `classic` | Default node styling across hierarchy levels. |
+| `shape` | `capsule`, `card`, `rect`, `diamond`, `hexagon`, `ellipse`, `underline` | By style and depth | Default node shape; local node shapes take precedence. |
+| `line` | `curve`, `tapered` / `organic`, `elbow`, `straight` | `curve`; vertical: `elbow` | Tree connector geometry. Fishbone uses straight ribs and horizontal cause connectors. |
+| `line_width` | Number | `1.2` | Tree connector width. Fishbone ribs are thicker; the spine width is fixed at 2.4pt. |
+| `theme` | `rainbow`, `business`, `forest`, `monochrome`, `nord`, `morandi`, `dracula`, `ocean`, `sunset` / `warm`, `solarized`, registered theme names | `rainbow` | Branch palette with inherited descendant colors. |
+| `palette` | `{HEX1, HEX2, ...}` | Theme palette | Override the branch palette; its first color also supplies the root color unless overridden. |
+| `root_color` | Hex or named color | Theme root color or first inline palette color | Root color override. |
+| `max_width` | TeX dimension, e.g. `4cm` | Unset | Default text wrapping width; local node settings take precedence. |
+| `align` | `left`, `center`, `right` | `center` | Default multiline text alignment. |
+| `root_style` | `{key=value, ...}` | Unset | Shared node options at depth 0. |
+| `branch_style` | `{key=value, ...}` | Unset | Shared node options at depth 1. |
+| `leaf_style` | `{key=value, ...}` | Unset | Shared node options at depth 2 and deeper, including intermediate topics. |
+
+Local node options override shared hierarchy options. Notes and overlay labels do
+not inherit these groups. See [shared styles](docs/user_guide.md#52-shared-styles-by-hierarchy-level).
+
+### Scaling & Publication Layout
+
+| Option | Values | Default | Description |
+| :--- | :--- | :---: | :--- |
+| `scale` | Factor, e.g. `0.85`, `1.2` | `1` | Scale coordinates, shapes, and text together before fitting. |
+| `fit_width`, `fit_height` | Nonnegative TeX dimensions, e.g. `\linewidth`, `18cm` | Unconstrained | Shrink the completed picture to the supplied limits, including overlays. Zero leaves an axis unconstrained; fitting never enlarges the picture. |
+| `min_font_size` | Number | `6` | Warn when the smallest visible main-label font after fitting falls below this size. Does not override fitting limits. |
+| `avoid_overlaps` | `true`, `false` | `false` | Move overlay labels and summary cards clear of visible node boxes and other overlay labels. Connector crossings can remain. |
+
+See [publication layout and its limits](docs/user_guide.md#5-publication-layout-and-navigation).
+
+### Bookmarks
+
+Load `hyperref` to include chart bookmarks in the PDF outline.
+
+| Option | Values | Default | Description |
+| :--- | :--- | :---: | :--- |
+| `bookmarks` | `true`, `false` | `false` | Generate nested PDF bookmarks. |
+| `bookmark_depth` | Integer | `4` | Maximum exported node depth; the root is depth 0. |
+| `bookmark_level` | Integer | `1` | PDF outline level assigned to the root. |
+| `bookmark_collapsed` | `true`, `false` | `false` | Include hidden descendants of collapsed nodes in bookmarks. |
 
 ### Overlays & Node Flags
 
@@ -138,6 +202,11 @@ Options are passed as comma-separated key-value pairs to `\begin{mindchart}[...]
     - Hidden Child 1
     - Hidden Child 2
   ```
+
+For node options and overlay parameters, see [node formatting](docs/user_guide.md#33-node-naming--per-node-options),
+[summaries, relationships, and boundaries](docs/user_guide.md#4-overlay-elements),
+[independent notes](docs/user_guide.md#54-independent-notes), and
+[PDF links](docs/user_guide.md#55-pdf-links-and-references).
 
 ---
 
@@ -170,7 +239,7 @@ For in-depth specifications and guides, refer to the `docs/` directory:
 
 This project is licensed under the [MIT License](LICENSE).
 
-## Publication layout / 文档排版
+## Publication layout
 
 Publication features include complete-picture fitting (`fit_width`, `fit_height`),
 opt-in overlay avoidance (`avoid_overlaps=true`), hierarchy styles (`root_style`,
@@ -178,12 +247,6 @@ opt-in overlay avoidance (`avoid_overlaps=true`), hierarchy styles (`root_style`
 `ref`, `target`, `node_ref`). See [the user guide](docs/user_guide.md#5-publication-layout-and-navigation)
 for syntax and limits, and [the publication example](test/visual/test_publication.tex).
 
-排版功能新增整图尺寸适配、可选的覆盖元素避让、按层级统一样式、独立注释卡片，以及
-网页、文档标签和图内节点链接。用法与限制见[用户指南](docs/user_guide.md#5-publication-layout-and-navigation)，
-中文复杂图示例见[排版示例](test/visual/test_publication.tex)。
-
-## Development verification / 开发验证
+## Development verification
 
 Run `python scripts/run_tests.py` to execute all checks. See [the test guide](test/README.md) for prerequisites, groups, and visual inspection. Generated files are stored in `build/test/`.
-
-运行 `python scripts/run_tests.py` 执行全部检查。依赖工具、测试分组和视觉检查说明见[测试指南](test/README.md)。生成文件保存在 `build/test/`。

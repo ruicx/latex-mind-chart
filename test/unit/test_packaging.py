@@ -56,10 +56,16 @@ class PackagingTests(unittest.TestCase):
                     self.assertIn("tex/latex/mindchart/" + module.as_posix(), names)
                 for example in Path("test/visual").glob("*.tex"):
                     self.assertIn("doc/latex/mindchart/" + example.as_posix(), names)
+                for readme in ("README.md", "README_zh.md"):
+                    self.assertEqual(archive.read("doc/latex/mindchart/" + readme),
+                                     Path(readme).read_bytes())
                 self.assertIn("doc/latex/mindchart/docs/showcases/markdown_preview-1.png", names)
                 self.assertFalse(any(name.endswith((".log", ".aux", ".pdf")) for name in names))
             with zipfile.ZipFile(ctan) as archive:
                 self.assertEqual(archive.read("mindchart/mindchart.tds.zip"), tds.read_bytes())
+                for readme in ("README.md", "README_zh.md"):
+                    self.assertEqual(archive.read("mindchart/" + readme),
+                                     Path(readme).read_bytes())
 
     def test_invalid_inputs(self) -> None:
         """Reject missing package sources and malformed ZIP archives.
